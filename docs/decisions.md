@@ -129,3 +129,32 @@ signups also shuts password sign-in — GoTrue answers "Email logins are disable
 console reads as a wrong password, with nothing in its own logs to say otherwise. It stays
 `true`; `[auth] enable_signup = false` is the gate, and it was found the hard way against
 the local stack before it was written down here.
+
+## Delivery
+
+**CI runs the README's own commands, in its order, and holds no secrets.**
+`.github/workflows/ci.yml` is `pnpm install --frozen-lockfile`, `pnpm check`, `pnpm build`
+on every pull request into `main` and every push to it. Nothing in it needs a key, because
+every variable in `.env.example` is optional by design: an empty environment is a state the
+site is supposed to survive, and CI is the cheapest place to keep proving that.
+
+The alternative — a matrix of Node versions, or a job per check so they fail faster — was
+rejected as cost without an answer: there is one runtime (`.nvmrc`), one package manager
+version (`packageManager`), and `pnpm check` takes seconds, so a second job would mostly buy
+a second checkout. `pnpm build` does come after `pnpm check` rather than beside it, so a lint
+failure answers before a compile starts. The action tags are major-version pins (`@v4`); a
+commit SHA per action is stricter and is what a hardened repository does, but it makes an
+audit read as a hex string, and this repository has no precedent for either.
+
+**An empty `NEXT_PUBLIC_SITE_URL` means unset, and that is a fix rather than a doc.** The
+reader used `??`, which only catches "absent", so the empty string — what `.env.example`
+ships, and what a GitHub Actions variable defined to nothing hands a build — reached
+`new URL("")` in `app/layout.tsx` and failed `next build` with `Invalid URL`. A fresh
+checkout that copied `.env.example` could not build, which contradicts the promise that file
+makes in its own header. `resolveSiteUrl()` now treats blank as absent and trims
+surrounding whitespace, and `lib/site/config.test.ts` pins it.
+
+The alternative — telling people to delete the key instead of leaving it empty — was
+rejected because the file's whole design says a blank key is a feature that stays off. What
+would change the answer is a variable whose absence is not the same as its emptiness; none
+of the ones this app reads is like that.

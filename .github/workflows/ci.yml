@@ -1,0 +1,74 @@
+name: CI
+
+# The commands the README tells a person to run, in the same order, on the Node and
+# pnpm versions this repository pins — so a red check here is something that also
+# fails on a laptop, not a runner-only riddle.
+#
+# It needs no secrets. Every key in `.env.example` is optional by design: an empty
+# one turns a feature off rather than breaking the render, and a build with no
+# environment at all is a state the site is expected to survive (that fallback is
+# what prints http://localhost:3000 into a metadata file). So CI proves the build
+# works while holding nothing worth stealing.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A second push to the same pull request cancels the first: the answer that matters
+# is the one about the newest commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      # Before setup-node, because `cache: pnpm` shells out to pnpm to find the
+      # store. No `version:` here on purpose — the version comes from
+      # `packageManager` in package.json, the same field corepack reads on a
+      # laptop, so there is one place to bump and one lockfile it has to match.
+      - name: pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # `--frozen-lockfile` fails on a package.json that disagrees with
+      # pnpm-lock.yaml instead of quietly resolving a different tree, which is the
+      # difference between "it passed" and "it passed here".
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # tsc --noEmit, eslint, vitest, then check:config — which is the one that
+      # fails when `supabase/config.toml` stops matching what the app assumes
+      # about the password floor and the signup switch.
+      - name: Check
+        run: pnpm check
+
+      # After `pnpm check`, and not folded into it: `next build` is the gate that
+      # sees what typecheck cannot — a next/og route reaching for a Node API, a
+      # server-only module imported into a client component, a route that will
+      # not prerender. A lint failure should answer in seconds, not after a
+      # compile, so it goes second.
+      - name: Build
+        run: pnpm build
+        env:
+          # Canonical origin for metadata, the sitemap, robots.txt and every email
+          # link. Unset it is http://localhost:3000 — an honest fallback on a
+          # laptop and the wrong thing to publish, so set the repository variable
+          # once the domain exists. Nothing else in this workflow reads one.
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}

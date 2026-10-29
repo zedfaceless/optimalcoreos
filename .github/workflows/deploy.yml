@@ -1,0 +1,139 @@
+name: Deploy
+
+# Two ways to get this repository onto Vercel, and the README documents the first
+# one: import the project, let Vercel's Git integration build every push to `main`.
+# Then this workflow is redundant and should be deleted rather than left to double
+# deploy.
+#
+# This is the second way, for the case where the thing that goes live should be the
+# thing CI just built and tested, not a rebuild on somebody else's machine. It stays
+# inert until it is handed a token: with no `VERCEL_TOKEN` the guard job says so and
+# the deploy job never runs, because a repository that has not chosen a path yet
+# should not wear a red cross on main for a decision nobody has made.
+#
+# The three secrets, all from the Vercel project's settings:
+#   VERCEL_TOKEN       Account → Settings → Tokens
+#   VERCEL_ORG_ID      .vercel/project.json after `vercel link`, or Team settings
+#   VERCEL_PROJECT_ID  .vercel/project.json after `vercel link`
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One production deploy at a time, and never cancelled in flight: a half-finished
+# `--prebuilt` push has already created a deployment on Vercel's side, and killing
+# the runner leaves that one unexplained.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  configured:
+    name: Is this repository set up to deploy?
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.guard.outputs.ready }}
+    steps:
+      - name: Look for the three secrets
+        id: guard
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          missing=""
+          [ -n "$VERCEL_TOKEN" ]      || missing="$missing VERCEL_TOKEN"
+          [ -n "$VERCEL_ORG_ID" ]     || missing="$missing VERCEL_ORG_ID"
+          [ -n "$VERCEL_PROJECT_ID" ] || missing="$missing VERCEL_PROJECT_ID"
+
+          if [ -z "$missing" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Deploy skipped::No$missing. Either import the repository into Vercel and let its Git integration deploy, or add those secrets (README, Deploy)."
+
+  deploy:
+    name: Deploy to production
+    needs: configured
+    if: needs.configured.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # `pull` writes `.vercel/project.json` and a `.env.production.local` holding
+      # the project's own environment variables, which is how this job builds with
+      # the same Supabase and Resend keys Vercel has without copying them into a
+      # second place that can drift. Both files are gitignored.
+      - name: Pull the project settings
+        run: pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # Builds with Vercel's builder, not `next build`, so the artefact is shaped
+      # the way the platform expects — `output: standalone` handling, the function
+      # split and the region all come from the project settings rather than from a
+      # guess here.
+      - name: Build
+        run: pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # `--prebuilt` uploads what the step above produced. The last line of the
+      # output is the deployment URL; it is handed to the environment so the run
+      # links to what it shipped.
+      - name: Deploy
+        id: deploy
+        run: |
+          url="$(pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN" | tail -n 1)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed $url"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      # README step 6, done by the job that could break it: `/devside` is noindex by
+      # header, not by robots.txt, and the sitemap has to name the real origin. A
+      # deploy that ships a localhost sitemap is a deploy that failed quietly.
+      - name: Verify what was deployed
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+          robots="$(curl -sSI "$URL/devside" | tr -d '\r' | grep -i '^x-robots-tag:' || true)"
+          case "$robots" in
+            *noindex*) echo "devside: ${robots:-missing}" ;;
+            *) echo "::error::/devside did not answer with an X-Robots-Tag naming noindex: ${robots:-no header}" && exit 1 ;;
+          esac
+
+          if curl -s "$URL/sitemap.xml" | grep -q 'http://localhost:3000'; then
+            echo "::error::sitemap.xml still names http://localhost:3000 — NEXT_PUBLIC_SITE_URL is unset in the Vercel project"
+            exit 1
+          fi
+          echo "sitemap: names the real origin"

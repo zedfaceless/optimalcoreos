@@ -110,6 +110,26 @@ pnpm build         # the real gate: server actions, next/og routes, headers
 that calls a Node API, a server-only module imported into a client component (that one is a
 build error by design), a route handler whose export shape Next rejects.
 
+### In GitHub Actions
+
+`.github/workflows/ci.yml` runs `pnpm install --frozen-lockfile`, `pnpm check` and
+`pnpm build` on every pull request into `main` and on every push to it — the same commands
+as above, on the Node version in `.nvmrc` and the pnpm version in `packageManager`, so a
+red check is reproducible on a laptop. It holds no secrets, because every key in
+`.env.example` is optional by design and a build with an empty environment is a state the
+site survives; that fallback is exactly what prints `http://localhost:3000` into the
+metadata. Set the repository variable `NEXT_PUBLIC_SITE_URL` so a build in CI publishes the
+real canonical origin instead.
+
+`.github/workflows/deploy.yml` is the optional second path to production: it pulls the
+Vercel project's settings, builds with `vercel build`, ships with `vercel deploy --prebuilt`,
+then checks its own work — `/devside` must answer an `X-Robots-Tag` naming `noindex`, and
+`sitemap.xml` must not name localhost. It stays inert, a notice rather than a red cross,
+until `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` exist as repository secrets.
+If the project is imported into Vercel and deploys from its Git integration instead — step
+4 below, the path this README recommends — delete that file rather than let the two race for
+the same production deployment.
+
 ## Deploy
 
 1. Create the hosted Supabase project, set the region close to the visitors (`sin1` is the
@@ -124,7 +144,9 @@ build error by design), a route handler whose export shape Next rejects.
 3. `supabase link --project-ref <ref>` then `supabase db push`.
 4. Import the repository into Vercel, set the same environment variables for Production and
    Preview, and deploy. Set `NEXT_PUBLIC_SITE_URL` per environment so a preview links to
-   itself.
+   itself. That is the path this repository recommends; to have Actions ship the artefact
+   instead, add the three `VERCEL_*` secrets and delete `.github/workflows/deploy.yml` — see
+   "In GitHub Actions" above.
 5. Insert the first `public.admin_users` row in the hosted database, then sign in at
    `/devside`.
 6. Verify a deploy: `curl -sI https://<domain>/devside | grep -i x-robots-tag` should answer
@@ -154,4 +176,5 @@ build error by design), a route handler whose export shape Next rejects.
 | `components/**` | `site/` (header, footer, sections, mockups), `forms/` (quote wizard, contact form), `devside/`, `ui/` |
 | `supabase/migrations/**` | The schema, in timestamped SQL |
 | `docs/` | `PLACEHOLDERS.md` (what only the owner can supply, and what is deliberately unfinished), `decisions.md` (the calls made while building, and why) |
+| `.github/workflows/**` | `ci.yml` — typecheck, lint, tests and a production build on every pull request into `main`. `deploy.yml` — the optional Vercel CLI deploy, inert until its three secrets exist |
 
