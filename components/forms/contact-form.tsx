@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea, describedBy } from "@/components/ui/form";
@@ -9,8 +9,9 @@ import { contactSchema, fieldErrors } from "@/lib/validation/forms";
 /**
  * The contact form (§7.7). It validates with the same schema the route handler
  * does, announces errors in place, keeps what the visitor typed when the request
- * fails, and never reports success it did not see. No CAPTCHA: the hidden field
- * and the server throttle are enough for a form this size.
+ * fails, and never reports success it did not see. No CAPTCHA: the hidden field, the
+ * three-second floor, the throwaway-domain list, the link count and the server
+ * throttle are what this form has instead (§15.5).
  */
 const empty = { name: "", email: "", message: "", website: "" };
 
@@ -19,6 +20,13 @@ export function ContactForm({ contactEmail }: { contactEmail: string }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "failed">("idle");
   const [failure, setFailure] = useState("");
+
+  /* Sent and never rendered, so a value that exists only in the browser is right;
+     see the same ref in the quote wizard for why a missing one drops nothing. */
+  const startedAt = useRef(0);
+  useEffect(() => {
+    startedAt.current = Date.now();
+  }, []);
 
   const set = (key: keyof typeof empty) => (event: { target: { value: string } }) => {
     setValues((current) => ({ ...current, [key]: event.target.value }));
@@ -39,7 +47,7 @@ export function ContactForm({ contactEmail }: { contactEmail: string }) {
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...values }),
+        body: JSON.stringify({ ...values, formStartedAt: startedAt.current }),
       });
       const payload: { ok?: boolean; message?: string; fields?: Record<string, string> } = await response
         .json()

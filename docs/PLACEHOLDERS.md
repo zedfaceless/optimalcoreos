@@ -86,11 +86,18 @@ pretends to be finished.
   is deliberate), then insert the matching `public.admin_users` row with the same
   `user_id`. There is no invite flow in the console yet; the allowlist row is the gate, and
   `admin_users_user_id_fkey` refuses a row for an account that does not exist.
-- **Min-fill-time, disposable domains and link-count flagging are not implemented.** §15.5
-  lists a 3-second floor on `form_started_at`, a small blocklist and a "more than three URLs
-  in the description" flag. None of the three is built; the honeypot is, and it cannot be
-  faked by a visitor because a person never sees the field. The others need a client-side
-  timestamp (which a bot can lie about) and a list nobody has supplied yet.
+- **The §15.5 bot signals are heuristics, and only one of them is a wall.** All three are
+  built in `lib/validation/spam.ts` and asked once per submission by both route handlers:
+  a three-second floor on `formStartedAt`, a sample blocklist of about seventy throwaway
+  domains (matched on label boundaries, subdomains included), and a drop past three links in
+  the free-text field. Each one answers a dropped submission with the same `{ ok: true }` a
+  saved one gets, because a bot that can read which check fired can iterate against it.
+  What is honestly weak: a script that omits `formStartedAt` skips the floor. That is
+  deliberate — a missing timestamp is also what a visitor whose clock is wrong sends, and
+  losing a hand-typed lead to a heuristic is the worse failure — so the floor only ends a
+  submission the browser positively dated inside three seconds. The blocklist is a sample,
+  not a subscription feed; the providers rotate, and the list wants replacing with a paid
+  feed or a nightly pull when one exists.
 - **A bot gets no reference to be fooled by.** §15.4 describes a fake reference on the
   honeypot path; the success answer here is `{ ok: true }` with no reference at all, and the
   wizard's success screen shows copy rather than a ticket number, so a bot sees exactly what

@@ -3,6 +3,7 @@ import { notifyOwners, sendEmail } from "@/lib/email/send";
 import { ownerContactEmail, visitorContactEmail } from "@/lib/email/templates";
 import { adminSupabase, hashIp } from "@/lib/supabase/admin";
 import { contactSchema, fieldErrors } from "@/lib/validation/forms";
+import { spamReason } from "@/lib/validation/spam";
 
 /** `POST /api/contact` — one row in `contact_messages`, one email each way. */
 export async function POST(request: Request) {
@@ -20,6 +21,18 @@ export async function POST(request: Request) {
     return jsonError(422, "Please check the highlighted fields.", fieldErrors(parsed.error));
   }
   const input = parsed.data;
+
+  /* Same three signals as the quote route, and the same silent answer: a bot is told
+     what a person is told, so it cannot tune itself against the reply. */
+  const drop = spamReason({
+    formStartedAt: body.formStartedAt,
+    email: input.email,
+    text: input.message,
+  });
+  if (drop) {
+    console.info(`[api/contact] dropped a submission: ${drop}`);
+    return json({ ok: true });
+  }
 
   const supabase = adminSupabase();
   if (!supabase) {

@@ -94,6 +94,12 @@ export function QuoteWizard({
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "failed">("idle");
   const [failure, setFailure] = useState("");
   const headingRef = useRef<HTMLHeadingElement>(null);
+  /* When the form became usable in the browser, for §15.5's three-second floor. A
+     ref written in an effect and not state: it is sent, never rendered, so it cannot
+     take part in hydration and a value that only exists on the client is exactly
+     right here. Zero means the effect never ran, which the server reads as "unknown"
+     and lets through rather than dropping a lead over. */
+  const startedAt = useRef(0);
 
   /* Days and zones depend on the clock and on the visitor's machine. They are
      derived during render rather than set from an effect, and they are only ever
@@ -109,6 +115,10 @@ export function QuoteWizard({
   useEffect(() => {
     if (step > 0) headingRef.current?.focus();
   }, [step]);
+
+  useEffect(() => {
+    startedAt.current = Date.now();
+  }, []);
 
   const set =
     <K extends keyof Values>(key: K) =>
@@ -150,6 +160,7 @@ export function QuoteWizard({
     const params = new URLSearchParams(window.location.search);
     const payload = {
       ...values,
+      formStartedAt: startedAt.current,
       utmSource: params.get("utm_source") ?? "",
       utmMedium: params.get("utm_medium") ?? "",
       utmCampaign: params.get("utm_campaign") ?? "",
