@@ -172,6 +172,10 @@ site_url = "http://localhost:3000"
 additional_redirect_urls = [
   "http://localhost:3000",
   "http://localhost:3000/devside",
+  # Where the recovery and invitation links land: a route handler, because turning a
+  # link into a session writes cookies. Unlisted, Auth refuses the redirect before the
+  # handler runs — so every hosted project needs this URL in its dashboard too.
+  "http://localhost:3000/devside/auth/confirm",
   "http://127.0.0.1:3000",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
@@ -266,6 +270,31 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
+
+# The four branded Auth emails (PRD §14.5), in `supabase/templates/`. GoTrue renders
+# them, not Resend, so the copy lives in HTML rather than in `lib/email/templates.ts`.
+# All four link to `/devside/auth/confirm` with a `token_hash`, which is the shape the
+# route handler can verify and turn into a cookie; GoTrue's default confirmation URL
+# lands on a page that cannot set one.
+#
+# These files are the local stack's. Each hosted project keeps its own copies in the
+# dashboard (Authentication → Emails), because the dashboard's values win and nothing
+# in the repository can push them there.
+[auth.email.template.invite]
+subject = "You have been invited to the Optimal Core OS console"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Optimal Core OS password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.confirmation]
+subject = "Confirm your email address"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.magic_link]
+subject = "Your Optimal Core OS sign-in link"
+content_path = "./supabase/templates/magic_link.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

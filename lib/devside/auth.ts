@@ -63,6 +63,20 @@ export async function requireAdmin(): Promise<Admin> {
   return admin;
 }
 
+/**
+ * The owner-only guard: the team page and the three mutations behind it.
+ *
+ * `role` is read from the allowlist row by `currentAdmin()`, so this is the same
+ * question the page asks, answered once more before a write. A staff admin who POSTs
+ * an invite form directly gets the same refusal as one who never saw the page.
+ */
+export async function requireOwner(): Promise<Admin> {
+  const admin = await requireAdmin();
+  if (admin.role !== "owner") redirect("/devside/dashboard?error=owner-only");
+  return admin;
+}
+
+
 /** True once the environment is complete enough to sign anybody in at all. */
 export function devsideConfigured(): boolean {
   return Boolean(
