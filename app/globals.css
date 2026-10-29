@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens — PRD §6.2–6.4. The names are the PRD's names on purpose, so a
+ * designer reading the document and an engineer reading the CSS speak the same
+ * language. Anything not listed here is Tailwind's own scale.
+ */
+@theme {
+  --color-navy-950: #0a1220;
+  --color-navy-900: #0f1b2e;
+  --color-navy-700: #1d2e4a;
+  --color-brand-600: #1f6feb;
+  --color-brand-700: #1859bf;
+  --color-brand-50: #eef4ff;
+  --color-accent-500: #14b8a6;
+  --color-gray-900: #111827;
+  --color-gray-600: #4b5563;
+  --color-gray-200: #e5e9f0;
+  --color-gray-50: #f7f9fc;
+  --color-danger-600: #dc2626;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgba(15, 27, 46, 0.06), 0 8px 24px rgba(15, 27, 46, 0.06);
+  --shadow-lift: 0 2px 4px rgba(15, 27, 46, 0.06), 0 16px 40px rgba(15, 27, 46, 0.12);
+  --radius-card: 1rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  /* The footer is the last thing on every page and the sticky mobile bar floats
+     over it, so the safe-area inset on an iPhone is padding on the body, not on
+     one component. */
+  body {
+    @apply bg-white font-sans text-gray-900 antialiased;
+    font-size: 16px;
+    line-height: 1.65;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--color-brand-600);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 3px solid rgba(31, 111, 235, 0.4);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Inputs must be 16px or iOS zooms the whole page when one is focused (§9). */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-[1200px] px-5 md:px-8 lg:px-10;
+  }
+
+  .section-y {
+    @apply py-16 md:py-[104px];
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-brand-600;
+  }
+
+  .measure {
+    max-width: 68ch;
+  }
+
+  /* A dot grid at very low opacity: texture without a background image asset. */
+  .grid-dots {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity: 0.07;
+  }
+
+  .grid-dots-dark {
+    background-image: radial-gradient(rgba(15, 27, 46, 0.6) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity: 0.05;
+  }
+
+  .skip-link {
+    @apply absolute left-4 top-4 z-[100] -translate-y-24 rounded-[10px] bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition-transform;
+  }
+
+  .skip-link:focus-visible {
+    @apply translate-y-0;
+  }
+}
+
+/*
+ * Entrance motion (PRD §6.6). The animation is decoration: the element is fully
+ * readable without it, and `prefers-reduced-motion` removes both the movement and
+ * the fade so nothing depends on a transition that may never fire.
+ */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 400ms ease,
+    transform 400ms ease;
+  will-change: opacity, transform;
+}
+
+.reveal[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal,
+  .reveal[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Tables that must scroll sideways on a phone get a visible affordance instead of
+   hiding the overflow silently. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.table-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-gray-200);
+  border-radius: 999px;
+}
