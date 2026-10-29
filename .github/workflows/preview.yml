@@ -158,9 +158,22 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.public_link
         run: |
           set -uo pipefail
-          curl -fsSL -o /tmp/cloudflared \
-            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          # This lookup has failed on a runner with a transient resolver, taking the
+          # whole step down before it wrote anything, so the download is retried
+          # rather than trusted once.
+          got=0
+          for i in 1 2 3 4 5; do
+            if curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 -o /tmp/cloudflared \
+              https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64; then
+              got=1
+              break
+            fi
+            echo "download attempt $i failed; retrying"
+            sleep 5
+          done
+          [ "$got" = "1" ] || { echo "could not download cloudflared"; exit 1; }
           chmod +x /tmp/cloudflared
+          /tmp/cloudflared --version
           nohup /tmp/cloudflared tunnel --url http://localhost:3000 --no-autoupdate \
             > /tmp/tunnel.log 2>&1 &
           url=""
@@ -195,6 +208,19 @@ jobs:
             echo "no environment for: the pages render, the submissions cannot."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=Preview link::$url"
+          echo "$url" > "$GITHUB_WORKSPACE/preview-link.txt"
+
+      # The job is the host, so the run is still going while the link is worth
+      # clicking — and a run's logs are not downloadable until it ends. The link
+      # goes into an artefact instead, which lands as soon as this step finishes.
+      - name: Keep the link
+        if: github.event_name == 'workflow_dispatch' && inputs.public_link
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-link
+          path: ${{ github.workspace }}/preview-link.txt
+          if-no-files-found: error
+          retention-days: 7
 
       # Nothing to do but stay alive: the job is the host, so the tunnel and the
       # server both end the moment this step does. Cancelling the run is the way to
