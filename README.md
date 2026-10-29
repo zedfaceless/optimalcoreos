@@ -130,6 +130,17 @@ If the project is imported into Vercel and deploys from its Git integration inst
 4 below, the path this README recommends — delete that file rather than let the two race for
 the same production deployment.
 
+`.github/workflows/preview.yml` is the path while there is no host at all. A GitHub-hosted
+runner cannot serve a site — it is ephemeral, and nothing connects to it — so this does the
+next honest thing: build, serve on port 3000, walk every published route, check the home page
+is a page rather than an empty 200, photograph desktop and phone views with the Chrome the
+runner image already ships, and file those pictures as an artefact. Run it by hand
+(`gh workflow run preview.yml`) and it also opens an anonymous Cloudflare quick tunnel and
+holds the job open for twenty minutes, so the UI has a link a person can click. No account,
+nothing installed, no secret; the link is public to whoever has it and dies with the run. The
+forms need a Supabase project this preview has no environment for, so it is a look at the
+site, not a test of the signups. Delete the file when a real host exists.
+
 ## Deploy
 
 1. Create the hosted Supabase project, set the region close to the visitors (`sin1` is the

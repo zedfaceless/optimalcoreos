@@ -1,0 +1,211 @@
+name: Preview
+
+# A look at the real site, produced by Actions, while there is no host yet.
+#
+# GitHub-hosted runners are ephemeral and accept no inbound connections, so this
+# cannot leave a site standing the way a host does. What it can do, and does, is
+# build the production bundle, serve it, walk every route with curl, photograph
+# the pages with the Chrome already installed on the image, and — when asked —
+# open a tunnel so the preview has a link a person can click for a while. That is
+# enough to answer "does the UI look right", without buying a host or holding a
+# secret. When a real host exists, delete this file; nothing else depends on it.
+#
+# It runs on push to `main` and to a release branch so a merge is looked at, not
+# just typechecked. The push run is silent about links on purpose: it exercises
+# the app and files screenshots.
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+  workflow_dispatch:
+    inputs:
+      public_link:
+        description: Open a temporary public link to the running preview
+        type: boolean
+        default: true
+      keep_alive_minutes:
+        description: Minutes to keep that link up (1-45)
+        type: number
+        default: 20
+
+permissions:
+  contents: read
+
+# Two pushes to the same branch cannot share port 3000 or the tunnel name, and the
+# newer commit is the one worth looking at.
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Build, serve, smoke, screenshot
+    runs-on: ubuntu-latest
+    # The keep-alive sleep is the long step; 45 minutes of it plus a build still
+    # fits, and the ceiling stops a forgotten run from holding a runner all day.
+    timeout-minutes: 60
+    env:
+      # Unset means localhost, which is what a preview wants: canonical links and
+      # the sitemap point at the preview itself rather than at a domain that does
+      # not serve it yet.
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # The same build `pnpm build` produces in CI. A preview of a development
+      # bundle would answer questions about a site nobody deploys.
+      - name: Build
+        run: pnpm build
+
+      # Started detached and left running for the steps below: each step is a new
+      # process, and the server has to outlive the one that launched it.
+      - name: Serve
+        run: |
+          nohup pnpm start --port 3000 > /tmp/next.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS -o /dev/null http://localhost:3000/; then
+              echo "next start answered after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "next start did not answer in 60s; its log follows"
+          cat /tmp/next.log
+          exit 1
+
+      # Every front door this site publishes, and the files a crawler asks for.
+      # 200 is all a preview can honestly assert: a page can render without a
+      # Supabase project, but nothing can be submitted without one, so the forms
+      # are looked at here, not exercised.
+      - name: Walk the routes
+        run: |
+          set -uo pipefail
+          failed=0
+          for route in / /solutions /services /how-we-work /why-us /about /contact \
+                       /request-quote /privacy /terms /devside /sitemap.xml \
+                       /robots.txt /manifest.webmanifest /icon /apple-icon; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3000$route")
+            printf '%-22s %s\n' "$route" "$code"
+            [ "$code" = "200" ] || failed=1
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "a route did not answer 200"
+            exit 1
+          fi
+
+      # The title is the one string a marketing page cannot lose without somebody
+      # noticing on the page, and the byte count catches a page that answers 200
+      # with an empty body — a prerender that went sideways looks like that.
+      - name: The home page is a page
+        run: |
+          html=$(curl -fsS http://localhost:3000/)
+          echo "$html" | grep -q '<title>[^<]*Optimal Core OS' || { echo "home page title is missing the brand"; exit 1; }
+          echo "$html" | grep -q '<h1' || { echo "home page has no h1"; exit 1; }
+          bytes=$(printf '%s' "$html" | wc -c)
+          echo "home page: $bytes bytes"
+          [ "$bytes" -gt 20000 ] || { echo "home page is suspiciously small"; exit 1; }
+
+      # Chrome ships with the runner image, so a picture of the page costs one
+      # process and no install. Two widths because that is where the header broke
+      # before: the phone layout hides controls the desktop one shows.
+      - name: Photograph the pages
+        run: |
+          mkdir -p shots
+          command -v google-chrome >/dev/null || { echo "google-chrome is missing from this image"; exit 1; }
+          shoot() {
+            google-chrome --headless=new --disable-gpu --no-sandbox --hide-scrollbars \
+              --virtual-time-budget=8000 --window-size="$2" \
+              --screenshot="shots/$1.png" "http://localhost:3000$3" >/dev/null 2>&1 \
+              || { echo "chrome could not capture $1"; return 1; }
+            test -s "shots/$1.png" || { echo "no screenshot for $1"; exit 1; }
+            # A blank capture is a few kilobytes of white; a real page is not.
+            size=$(stat -c%s "shots/$1.png")
+            echo "$1: $size bytes"
+            [ "$size" -gt 20000 ] || { echo "screenshot $1 looks blank"; exit 1; }
+          }
+          shoot home-1440 1440,3200 /
+          shoot home-390 390,3000 /
+          shoot contact-390 390,2200 /contact
+          shoot devside-1440 1440,1400 /devside
+
+      - name: Keep the pictures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-screenshots
+          path: shots/
+          if-no-files-found: warn
+          retention-days: 7
+
+      # Anonymous quick tunnels need no account and no token; the URL is random and
+      # dies with the job. The binary is the linux-amd64 build, which is what the
+      # runner is.
+      - name: Open a temporary link
+        if: github.event_name == 'workflow_dispatch' && inputs.public_link
+        run: |
+          set -uo pipefail
+          curl -fsSL -o /tmp/cloudflared \
+            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x /tmp/cloudflared
+          nohup /tmp/cloudflared tunnel --url http://localhost:3000 --no-autoupdate \
+            > /tmp/tunnel.log 2>&1 &
+          url=""
+          for i in $(seq 1 30); do
+            url=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/tunnel.log | head -1 || true)
+            [ -n "$url" ] && break
+            sleep 2
+          done
+          if [ -z "$url" ]; then
+            echo "the tunnel did not come up; its log follows"
+            cat /tmp/tunnel.log
+            exit 1
+          fi
+          # DNS for a fresh tunnel name takes a moment; retry until the outside
+          # world agrees with the tunnel that it exists.
+          code=""
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$url/")
+            [ "$code" = "200" ] && break
+            sleep 3
+          done
+          {
+            echo "### Preview is up"
+            echo
+            echo "**$url**"
+            echo
+            echo "Through the tunnel the home page answered \`$code\`. The link is public"
+            echo "to anyone who has it, and it stops when this run stops — after"
+            echo "${{ inputs.keep_alive_minutes }} minutes, or when the run is cancelled."
+            echo
+            echo "Sign-in and the forms need a Supabase project, which this preview has"
+            echo "no environment for: the pages render, the submissions cannot."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Preview link::$url"
+
+      # Nothing to do but stay alive: the job is the host, so the tunnel and the
+      # server both end the moment this step does. Cancelling the run is the way to
+      # end it early.
+      - name: Stay up
+        if: github.event_name == 'workflow_dispatch' && inputs.public_link
+        run: sleep $(( ${{ inputs.keep_alive_minutes }} * 60 ))
+
+      - name: Tear down
+        if: always()
+        run: |
+          pkill -f cloudflared || true
+          pkill -f 'next start' || true
+          pkill -f next-server || true
