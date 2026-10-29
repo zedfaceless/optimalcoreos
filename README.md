@@ -21,11 +21,17 @@ messages those forms produce.
 ```bash
 pnpm install
 supabase start                 # Postgres 17, Auth, Studio, Mailpit — first run pulls images
-supabase db reset              # applies supabase/migrations/*.sql
+supabase db reset              # migrations, then supabase/seed.sql
 cp .env.example .env.local     # then fill it in; see "Environment" below
 supabase status                # prints the API URL, anon key and service_role key
 pnpm dev                       # http://localhost:3000
 ```
+
+`supabase db reset` also seeds two admins, six leads and three messages, so the console is
+usable the moment the stack is up: **owner@demo.local** (owner — Team and Audit pages) and
+**staff@demo.local** (staff — leads and messages only), both with the password
+`demo-local-1234`. The fixture is `supabase/seed.sql`; nothing in it is product data and
+production never runs it.
 
 `.env.local` is ignored by git; `.env.example` lists every key the code reads and what an
 empty one costs. `docs/PLACEHOLDERS.md` holds the values only the owner can supply — domain,
@@ -41,23 +47,26 @@ The console has no signup. An account is only an admin if a row in `public.admin
 says so, and that table has no client-facing policy — it is read with the service key after
 the session is checked.
 
-1. Open Studio at <http://localhost:54323> → **Authentication → Add user**. Set an email and
-   a password of at least 12 characters (`minimum_password_length = 12` in
-   `supabase/config.toml`). `enable_signup = false` is deliberate; a signup form would create
-   an account the allowlist then refuses.
+Locally there is nothing to do: the seed writes that row. On a hosted project the first one
+is still made by hand, because inviting needs somebody who is already allowed in:
+
+1. Open the project's dashboard → **Authentication → Add user**. Set an email and a password
+   of at least 12 characters (`minimum_password_length = 12` in `supabase/config.toml`, and
+   the same in the dashboard). `enable_signup = false` is deliberate; a signup form would
+   create an account the allowlist then refuses.
 2. Copy the new user's id and insert the allowlist row:
 
 ```sql
 insert into public.admin_users (user_id, email, display_name, role)
-values ('<uuid from Studio>', 'you@example.com', 'Your Name', 'owner');
+values ('<uuid from the dashboard>', 'you@example.com', 'Your Name', 'owner');
 ```
 
-3. Sign in at <http://localhost:3000/devside>.
+3. Sign in at `/devside`. From then on, everybody else is invited from **`/devside/team`**,
+which sends Supabase's invitation email and writes the allowlist row itself.
 
-For a hosted project, run the same insert there (SQL editor, or `supabase db push` for the
-table itself). `role` is `owner` or `admin`; `is_active` defaults to true, and setting it to
-false ends that person's access at their next page load — `requireAdmin()` re-reads the row
-on every request rather than trusting the cookie.
+`role` is `owner` or `staff`; `is_active` defaults to true, and setting it to false ends that
+person's access at their next page load — `requireAdmin()` re-reads the row on every request
+rather than trusting the cookie.
 
 ## Migrations
 
@@ -91,14 +100,35 @@ saved whether or not the mail goes out), `IP_HASH_SALT` before real traffic, and
 ## Checks
 
 ```bash
-pnpm check      # tsc --noEmit, then eslint
-pnpm test       # vitest: schemas, guards, formatters, the slot and label helpers
-pnpm build      # the real gate: server actions, next/og routes, headers
+pnpm check         # tsc --noEmit, eslint, vitest, then check:config
+pnpm test          # vitest: schemas, guards, formatters, the console's pure helpers
+pnpm check:config  # asserts the Auth settings in supabase/config.toml and the template files
+pnpm build         # the real gate: server actions, next/og routes, headers
 ```
 
 `pnpm build` is the one that catches the failures typecheck cannot see — a `next/og` route
 that calls a Node API, a server-only module imported into a client component (that one is a
 build error by design), a route handler whose export shape Next rejects.
+
+### In GitHub Actions
+
+`.github/workflows/ci.yml` runs `pnpm install --frozen-lockfile`, `pnpm check` and
+`pnpm build` on every pull request into `main` and on every push to it — the same commands
+as above, on the Node version in `.nvmrc` and the pnpm version in `packageManager`, so a
+red check is reproducible on a laptop. It holds no secrets, because every key in
+`.env.example` is optional by design and a build with an empty environment is a state the
+site survives; that fallback is exactly what prints `http://localhost:3000` into the
+metadata. Set the repository variable `NEXT_PUBLIC_SITE_URL` so a build in CI publishes the
+real canonical origin instead.
+
+`.github/workflows/deploy.yml` is the optional second path to production: it pulls the
+Vercel project's settings, builds with `vercel build`, ships with `vercel deploy --prebuilt`,
+then checks its own work — `/devside` must answer an `X-Robots-Tag` naming `noindex`, and
+`sitemap.xml` must not name localhost. It stays inert, a notice rather than a red cross,
+until `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` exist as repository secrets.
+If the project is imported into Vercel and deploys from its Git integration instead — step
+4 below, the path this README recommends — delete that file rather than let the two race for
+the same production deployment.
 
 ## Deploy
 
@@ -114,7 +144,9 @@ build error by design), a route handler whose export shape Next rejects.
 3. `supabase link --project-ref <ref>` then `supabase db push`.
 4. Import the repository into Vercel, set the same environment variables for Production and
    Preview, and deploy. Set `NEXT_PUBLIC_SITE_URL` per environment so a preview links to
-   itself.
+   itself. That is the path this repository recommends; to have Actions ship the artefact
+   instead, add the three `VERCEL_*` secrets and delete `.github/workflows/deploy.yml` — see
+   "In GitHub Actions" above.
 5. Insert the first `public.admin_users` row in the hosted database, then sign in at
    `/devside`.
 6. Verify a deploy: `curl -sI https://<domain>/devside | grep -i x-robots-tag` should answer
@@ -144,4 +176,5 @@ build error by design), a route handler whose export shape Next rejects.
 | `components/**` | `site/` (header, footer, sections, mockups), `forms/` (quote wizard, contact form), `devside/`, `ui/` |
 | `supabase/migrations/**` | The schema, in timestamped SQL |
 | `docs/` | `PLACEHOLDERS.md` (what only the owner can supply, and what is deliberately unfinished), `decisions.md` (the calls made while building, and why) |
+| `.github/workflows/**` | `ci.yml` — typecheck, lint, tests and a production build on every pull request into `main`. `deploy.yml` — the optional Vercel CLI deploy, inert until its three secrets exist |
 

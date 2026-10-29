@@ -22,6 +22,12 @@ const sizes: Record<Size, string> = {
   lg: "min-h-[3.25rem] px-7 text-base md:min-h-12",
 };
 
+/**
+ * `inline-flex` lives in the base string, so a caller that wants to hide the
+ * button must say it with a variant (`max-lg:hidden`), not with `hidden`: both
+ * land in the utilities layer and the sheet emits `.inline-flex` after `.hidden`,
+ * so the bare utility loses. The header hit this once.
+ */
 export function buttonClass(variant: Variant = "primary", size: Size = "md", extra?: string) {
   return cn(
     "inline-flex items-center justify-center gap-2 rounded-[10px] font-semibold leading-none transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60",

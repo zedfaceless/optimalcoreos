@@ -92,7 +92,9 @@ export function Header() {
       <div className="shell flex h-[72px] items-center justify-between gap-4">
         <Logo />
 
-        <nav aria-label="Primary" className="hidden lg:block">
+        {/* `lg:ml-auto xl:ml-0`: between 1024 and 1279 the header has no button,
+            so the nav takes the free space instead of leaving a hole at the right. */}
+        <nav aria-label="Primary" className="hidden lg:block lg:ml-auto xl:ml-0">
           <ul className="flex items-center gap-0.5 xl:gap-1">
             {NAV_LINKS.map((link) => {
               const active = isActive(link.href);
@@ -121,7 +123,14 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link href={CTA.quotePath} className={buttonClass("primary", "md", "hidden lg:inline-flex")}>
+          {/* Hidden below `xl` on purpose: at 1024–1279 the seven nav labels and
+              this button do not both fit — the labels broke onto two lines first.
+              The drawer keeps the button and the sticky bar repeats it, so the
+              header gives up the button rather than the navigation.
+              `max-xl:hidden`, not `hidden`: `buttonClass` carries `inline-flex`
+              itself, and in the compiled sheet `.inline-flex` follows `.hidden`,
+              so a bare `hidden` loses and the phone header grew a second CTA. */}
+          <Link href={CTA.quotePath} className={buttonClass("primary", "md", "max-xl:hidden")}>
             {CTA.primary}
           </Link>
           <button

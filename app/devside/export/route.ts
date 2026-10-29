@@ -1,4 +1,5 @@
 import { currentAdmin } from "@/lib/devside/auth";
+import { toCsv } from "@/lib/devside/csv";
 import { LEAD_STATUSES, MESSAGE_STATUSES } from "@/lib/devside/format";
 import { adminSupabase } from "@/lib/supabase/admin";
 import { isoDateInZone } from "@/lib/site/meetings";
@@ -10,23 +11,10 @@ import { isoDateInZone } from "@/lib/site/meetings";
  * not a re-render. It answers 401 instead of redirecting: a redirect here would hand
  * a fetch() an HTML login page with a 200 after following it, which is exactly the
  * kind of silence that ends with a spreadsheet full of login markup.
+ *
+ * The escaping and the BOM moved to `lib/devside/csv.ts` so the formula guard is a
+ * tested function rather than a private one.
  */
-
-/** Excel treats a cell starting with `=`, `+`, `-` or `@` as a formula. */
-function cell(value: unknown): string {
-  if (value === null || value === undefined) return "";
-  let text = String(value);
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-  return `"${text.replace(/"/g, '""')}"`;
-}
-
-function toCsv(headers: string[], rows: unknown[][]): string {
-  const lines = [headers.map(cell).join(",")];
-  for (const row of rows) lines.push(row.map(cell).join(","));
-  /* A BOM, because Excel opens a plain UTF-8 CSV in the system codepage and a
-     Philippine business name with an ñ or a ₱ would arrive as mojibake. */
-  return `\ufeff${lines.join("\r\n")}\r\n`;
-}
 
 export async function GET(request: Request) {
   const admin = await currentAdmin();

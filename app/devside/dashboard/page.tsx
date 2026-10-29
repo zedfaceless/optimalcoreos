@@ -25,8 +25,13 @@ export const dynamic = "force-dynamic";
 
 const PIPELINE = ["new", "contacted", "quoted", "won", "lost"] as const;
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; password?: string }>;
+}) {
   const admin = await requireAdmin();
+  const { error, password } = await searchParams;
   const service = adminSupabase();
 
   if (!service) {
@@ -88,6 +93,26 @@ export default async function DashboardPage() {
         <h1 className="font-display text-2xl font-bold tracking-tight text-navy-900">Dashboard</h1>
         <p className="mt-1 text-sm text-gray-600">Signed in as {admin.displayName ?? admin.email}.</p>
       </div>
+
+      {/* `requireOwner()` sends a staff admin here rather than to the page it refused,
+          because redirecting to `/devside/team` would land on the same guard again. */}
+      {error === "owner-only" ? (
+        <p
+          role="alert"
+          className="rounded-[10px] border border-danger-600/30 bg-danger-600/5 px-3.5 py-3 text-sm text-danger-600"
+        >
+          That page is for owners. Ask an owner if you need something changed there.
+        </p>
+      ) : null}
+
+      {password === "changed" ? (
+        <p
+          role="status"
+          className="rounded-[10px] border border-gray-200 bg-white px-3.5 py-3 text-sm text-gray-600"
+        >
+          Password saved. The next sign-in uses the new one.
+        </p>
+      ) : null}
 
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((tile) => (

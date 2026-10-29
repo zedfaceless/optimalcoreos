@@ -4,6 +4,7 @@ import { ownerQuoteEmail, visitorQuoteEmail } from "@/lib/email/templates";
 import { isSelectableDate, labelForSlot } from "@/lib/site/meetings";
 import { adminSupabase, hashIp } from "@/lib/supabase/admin";
 import { fieldErrors, quoteSchema } from "@/lib/validation/forms";
+import { spamReason } from "@/lib/validation/spam";
 
 /**
  * `POST /api/quote` — one row in `quote_requests`, one email to the owners, one
@@ -27,6 +28,20 @@ export async function POST(request: Request) {
     return jsonError(422, "Please check the highlighted fields.", fieldErrors(parsed.error));
   }
   const input = parsed.data;
+
+  /* §15.5's three signals, asked in one place and answered exactly as a saved request
+     is answered. `formStartedAt` is read from the body rather than the schema: it is
+     evidence about the browser, not something the visitor typed, and a schema field
+     would make an old client's request invalid instead of merely unproven. */
+  const drop = spamReason({
+    formStartedAt: body.formStartedAt,
+    email: input.email,
+    text: input.description,
+  });
+  if (drop) {
+    console.info(`[api/quote] dropped a submission: ${drop}`);
+    return json({ ok: true });
+  }
 
   if (!isSelectableDate(input.preferredDate)) {
     return jsonError(422, "Please choose a weekday within the next six weeks.", {

@@ -28,7 +28,7 @@ export function Logo({
       </svg>
       <span
         className={cn(
-          "font-display text-[1.0625rem] font-extrabold tracking-[-0.02em]",
+          "whitespace-nowrap font-display text-[1.0625rem] font-extrabold tracking-[-0.02em]",
           tone === "dark" ? "text-navy-950" : "text-white",
         )}
       >

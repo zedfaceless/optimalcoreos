@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { vercelAnalyticsEnabled } from "@/lib/site/analytics";
 import { siteUrl } from "@/lib/site/config";
 import "./globals.css";
 
@@ -55,12 +56,20 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  /* Read per render rather than at module load: the layout is prerendered, and Next inlines
+     `NEXT_PUBLIC_*` at build time either way, so this is the same value every request — it
+     just keeps the decision in one function a test can read (§14.3). */
+  const analytics = vercelAnalyticsEnabled();
   return (
     <html lang="en" className={`${inter.variable} ${jakarta.variable}`}>
       <body>
         {children}
-        <Analytics />
-        <SpeedInsights />
+        {analytics ? (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        ) : null}
       </body>
     </html>
   );
