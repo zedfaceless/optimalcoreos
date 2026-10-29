@@ -158,3 +158,23 @@ The alternative — telling people to delete the key instead of leaving it empty
 rejected because the file's whole design says a blank key is a feature that stays off. What
 would change the answer is a variable whose absence is not the same as its emptiness; none
 of the ones this app reads is like that.
+
+**While there is no host, Actions publishes a preview and calls it one.** A GitHub-hosted
+runner is ephemeral and accepts no inbound connection, so "deploy to Actions" cannot mean
+what a host means. `.github/workflows/preview.yml` therefore builds the production bundle,
+serves it on port 3000, walks every published route, asserts the home page is a page rather
+than an empty 200, photographs desktop and phone widths with the Chrome already on the runner
+image, and files those as an artefact; dispatched by hand it also opens an anonymous
+Cloudflare quick tunnel and holds the job open for twenty minutes, which is the only way this
+shape of runner can hand anybody a URL. `NEXT_PUBLIC_SITE_URL` falls back to localhost here,
+so canonical links and the sitemap point at the preview and not at a domain that does not
+serve it yet, and the preview holds no Supabase keys — the pages render, the submissions
+cannot, and the step summary says so instead of letting a visitor discover it.
+
+The alternatives were rejected for concrete reasons. A self-hosted runner on somebody's
+machine would serve the site properly, at the cost of a service to keep awake and patched for
+a look at a page. Vercel is a host, and choosing a host is the decision this one postpones.
+A static export would have required deleting the server actions and the `next/og` routes to
+satisfy `output: 'export'`, which previews a different site, not this one. The tunnel is
+temporary in the way the file itself says: random URL, public to anyone holding it, gone when
+the run ends or is cancelled. When a real host exists, delete the file; nothing else reads it.
