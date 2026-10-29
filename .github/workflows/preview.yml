@@ -191,7 +191,12 @@ jobs:
           # world agrees with the tunnel that it exists.
           code=""
           for i in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$url/")
+            # A fresh tunnel name is not in DNS the instant it exists, and curl
+            # answers 6 for that. Without the `|| true` the first lookup aborts the
+            # whole step under `set -e`, which is exactly what happened here: the
+            # tunnel was up and the retry that exists for this never ran.
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$url/" || true)
+            echo "attempt $i through the tunnel: ${code:-no answer yet}"
             [ "$code" = "200" ] && break
             sleep 3
           done
