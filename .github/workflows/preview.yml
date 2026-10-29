@@ -32,10 +32,12 @@ on:
 permissions:
   contents: read
 
-# Two pushes to the same branch cannot share port 3000 or the tunnel name, and the
-# newer commit is the one worth looking at.
+# Two pushes to the same branch cannot share the tunnel name and the newer commit is
+# the one worth looking at — but a manual run gets its own group. Each job is its own
+# VM, so they do not actually collide; cancelling one to save four runner-minutes left
+# a red check on the pull request instead, which is the worse trade.
 concurrency:
-  group: preview-${{ github.ref }}
+  group: preview-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
