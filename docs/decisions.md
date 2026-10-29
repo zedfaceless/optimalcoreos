@@ -59,6 +59,43 @@ saves a `.csv` full of login markup. It also carries a BOM (Excel and the peso s
 prefixes any cell starting with `=`, `+`, `-` or `@` with `'`, because a lead's description
 is text a stranger wrote.
 
+## Identity and the trail
+
+**The audit log is one append-only table, and it is append-only by privilege.** §13 sketches
+a history per entity. `admin_audit_log` is one table with `action`, `entity`, `entity_id` and
+a small `detail` object instead, because five near-identical history tables would each need
+their own reader and their own test. `service_role` holds `select` and `insert` and nothing
+else, so the console cannot rewrite the trail even through a bug; there is no `updated_at`
+for the same reason. `entity_id` is not a foreign key: two of the three entities are rows a
+retention purge will delete, and an audit row should outlive its subject. `actor_email` is a
+copy rather than a join for the same reason — a departed admin's actions still read as theirs.
+
+**A recovery link lands on a route handler, not a page.** Turning a token into a session
+writes cookies, and a Server Component cannot; a page would have had to render first and then
+redirect, which leaves a half-authenticated render behind. `/devside/auth/confirm` accepts
+either shape Auth sends — a `token_hash` with a `type`, which is what our own templates link
+to, and a PKCE `code`, which is what the default flow redirects with — and forwards to
+`/devside/update-password`. The page then tells three states apart: no session (spent or
+expired link), a session for an account that is not on the allowlist, and a session that may
+set a password. Only the third renders a form.
+
+**The team page refuses two things, and one of them is the point.** Nobody changes their own
+access, and the last active owner cannot be deactivated. The second is mostly a backstop: the
+only row that can be the last owner is the actor's own, so `self` fires first in practice. It
+stays because the guard costs one comparison and it is what a future non-human caller would
+need — and `docs/PLACEHOLDERS.md` says so rather than implying both refuse real clicks.
+
+**`pnpm check:config` asserts what the repository can see.** The password floor and the
+signup switch live in the dashboard on hosted projects, so no local check can prove they
+match; the script asserts `supabase/config.toml` (floor 12, signups shut, the email provider
+still on, the redirect target listed, all four template files present) and prints the hosted
+list beside the result. It is deliberately a small line-based reader rather than a TOML
+parser — it reads only the keys it asserts, and it says so at the top.
+
+**Analytics default on.** `NEXT_PUBLIC_VERCEL_ANALYTICS` unmounts `<Analytics />` and
+`<SpeedInsights />` when it says `off`, `false`, `0` or `no`. Both packages are cookieless and
+inert off Vercel, so the wrong default is the one where a typo silently turns telemetry off.
+
 ## The public site
 
 **Static pages, generated assets.** Every marketing page is statically rendered; the only
@@ -72,14 +109,19 @@ it needs no migration, and it cannot fail closed on a database hiccup. On Vercel
 protect the second warm function, which is recorded in `docs/PLACEHOLDERS.md` rather than
 described as done.
 
-**`[db.seed] enabled = false`.** There is no `seed.sql`, and pointing `sql_paths` at a
-missing file makes `db reset` fail after the migrations succeeded — which reads like a
-migration bug. The line stays commented in place so the next person sees where a seed goes.
+**`[db.seed]` is on, and the seed writes real Auth rows.** Two admins, six leads and three
+messages make a fresh `db reset` a console somebody can sign in to and use, which is what a
+reviewer needs and what the fixtures in a screenshot are. The `auth.users` rows carry a
+bcrypt password and the matching `auth.identities` row because the password grant looks up
+the identity, not the user — a seed that inserts only `auth.users` produces an account whose
+correct password is refused. Verified by signing in, not by the reset's exit code.
 
 **Signup off, password floor 12, both in `supabase/config.toml`.** The console is
 invite-only, so an open signup form creates accounts the allowlist refuses. Both settings
 live in the dashboard for the hosted projects and nothing in this repository can verify the
-match — that mismatch is called out where the values are set.
+match — `pnpm check:config` asserts the local file and prints the hosted list beside the
+result, which turns a mismatch from something a reviewer remembers into something a run
+names.
 
 The name that traps people is one section down: `[auth.email] enable_signup` is
 `GOTRUE_EXTERNAL_EMAIL_ENABLED`, not "may people sign up with email". Turning it off to shut

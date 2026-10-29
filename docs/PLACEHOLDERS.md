@@ -32,6 +32,7 @@ Two rules this file exists to keep:
 | `CONTACT_PUBLIC_HOURS` | `Monday to Friday, 09:00–17:00 (Asia/Manila)` | Unconfirmed opening hours would be published. |
 | `IP_HASH_SALT` | empty string | The IP hash becomes a plain unsalted SHA-256 of an address — brute-forceable in minutes over the IPv4 space. Set it before the first real submission. |
 | `DATA_RETENTION_MONTHS` | `24` | `/privacy` quotes 24 months. |
+| `NEXT_PUBLIC_VERCEL_ANALYTICS` | unset | Both Vercel scripts mount. `off` (or `false`, `0`, `no`) unmounts `<Analytics />` and `<SpeedInsights />`; anything else leaves them on. |
 | `NEXT_PUBLIC_LEGAL_UPDATED` | unset | `/privacy` and `/terms` render no "last updated" date, which is the honest state until counsel has read them. |
 
 ## Decisions the owner has to make
@@ -68,10 +69,12 @@ pretends to be finished.
   pasted into Authentication → Emails. The dashboard's copies win, and until they are pasted
   a hosted project sends GoTrue's stock mail pointing at GoTrue's own confirmation URL,
   which lands on a page that cannot set a session cookie.
-- **`NEXT_PUBLIC_VERCEL_ANALYTICS` is not implemented.** §14.3 lists it as an optional
-  toggle; `<Analytics />` and `<SpeedInsights />` are always mounted in `app/layout.tsx`.
-  Both are cookieless and inert outside Vercel, which is why the missing switch is a gap and
-  not a leak.
+- **`NEXT_PUBLIC_VERCEL_ANALYTICS` is a switch, and the default is on.** §14.3 lists it as
+  optional; `lib/site/analytics.ts` reads it and `app/layout.tsx` mounts `<Analytics />` and
+  `<SpeedInsights />` unless it says `off` (or `false`, `0`, `no`). On is the default because
+  both packages are cookieless and inert outside Vercel — the cost of leaving them mounted is
+  two no-op script tags, and the cost of a typo turning telemetry off silently is that nobody
+  notices for a month. A value that is not one of the four words is treated as unset.
 - **There is no `middleware.ts`.** §14.5 asks for one on `/devside/:path*`. The
   `X-Robots-Tag` and `Cache-Control` headers it would add are set in `next.config.ts`
   `headers()`, where they cannot be skipped by a matcher typo, and the session gate is
@@ -84,9 +87,13 @@ pretends to be finished.
   console's status, notes and filters are columns on the two lead tables, and the audit log
   is one append-only table rather than the per-entity history §13 sketches. When those
   tables arrive, the console grows a page per table rather than a rewrite.
-- **`supabase/seed.sql` does not exist**, so `[db.seed]` is disabled in
-  `supabase/config.toml` rather than pointed at a missing file. Local data is whatever the
-  forms insert.
+- **`supabase/seed.sql` is a fixture with a working sign-in.** `db reset` writes two admins
+  (`owner@demo.local` as owner, `staff@demo.local` as staff, both `demo-local-1234`), six
+  leads across the pipeline and three messages. The `auth.users` and `auth.identities` rows
+  are hand-written because GoTrue has no SQL way to create a user with a password, and the
+  identities row is what the password grant actually looks up — so the seed is verified by
+  signing in, not by the reset exiting 0. There are deliberately no `admin_audit_log` rows:
+  a seeded history would be fiction, and the empty state says what writes the first line.
 - **Adding an admin is a page, and one case is still a dashboard step.** `/devside/team`
   invites by address (Supabase's invite mail, then the `admin_users` row), promotes, demotes
   and deactivates. Two rules keep it from locking itself out: nobody changes their own access,
