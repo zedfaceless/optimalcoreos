@@ -1,0 +1,9 @@
+# pnpm blocks postinstall scripts unless a package is allowed here. `unrs-resolver`
+# ships a native binary and has nothing else to build, so it is allowed; the block
+# stays on for everything else, which is the point of the default.
+allowBuilds:
+  unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - '@hookform/resolvers@6.0.2'
+
