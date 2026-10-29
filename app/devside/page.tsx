@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { signIn } from "@/app/devside/actions";
 import { currentAdmin, devsideConfigured } from "@/lib/devside/auth";
@@ -88,6 +89,14 @@ export default async function DevsideLoginPage({
           Until then nobody can sign in, and the console says so instead of pretending.
         </p>
       )}
+
+      {configured ? (
+        <p className="mt-6 text-sm">
+          <Link href="/devside/reset-password" className="text-brand-600 hover:underline">
+            Forgot your password?
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

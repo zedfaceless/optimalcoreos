@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { saveLead } from "@/app/devside/actions";
 import { requireAdmin } from "@/lib/devside/auth";
+import { describeAudit, type AuditRow } from "@/lib/devside/audit";
 import {
   formatInManila,
   LEAD_STATUSES,
@@ -97,6 +98,18 @@ export default async function LeadPage({
   if (!data) notFound();
 
   const lead = data as Lead;
+
+  /* The last ten things that happened to this lead, from the audit table (§13). Capped
+     because the answer this page gives is "where is it now", and a lead with more than
+     ten moves has a story the console is not the right place to read. */
+  const { data: activityData } = await service
+    .from("admin_audit_log")
+    .select("id, created_at, actor_email, action, entity, entity_id, detail")
+    .eq("entity", "quote_request")
+    .eq("entity_id", id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  const activity = (activityData ?? []) as AuditRow[];
 
   return (
     <div className="space-y-6">
@@ -210,6 +223,26 @@ export default async function LeadPage({
                 {lead.email}
               </a>
             </p>
+          </section>
+
+          <section className="rounded-card border border-gray-200 bg-white p-5 shadow-card">
+            <h2 className="font-display text-base font-semibold text-navy-900">Activity</h2>
+            {activity.length === 0 ? (
+              <p className="mt-3 text-sm text-gray-600">
+                Nothing recorded yet. The first status change writes a line here.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2 text-sm">
+                {activity.map((event) => (
+                  <li key={event.id} className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-gray-900">{describeAudit(event)}</span>
+                    <span className="text-xs text-gray-600">
+                      {event.actor_email} · {relativeTime(event.created_at)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <section className="rounded-card border border-gray-200 bg-white p-5 shadow-card">

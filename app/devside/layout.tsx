@@ -28,6 +28,11 @@ const LINKS = [
   { href: "/devside/dashboard", label: "Dashboard" },
   { href: "/devside/leads", label: "Leads" },
   { href: "/devside/messages", label: "Messages" },
+  /* Owner-only, and hidden rather than shown-and-refused: the two pages behind these
+     links answer `requireOwner()`, so a staff admin following one would land on the
+     dashboard with an error. The gate is still the page, not this list. */
+  { href: "/devside/team", label: "Team", ownerOnly: true },
+  { href: "/devside/audit", label: "Audit", ownerOnly: true },
 ];
 
 export default async function DevsideLayout({ children }: { children: ReactNode }) {
@@ -53,7 +58,7 @@ export default async function DevsideLayout({ children }: { children: ReactNode 
           {admin ? (
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <nav aria-label="Console" className="flex items-center gap-1">
-                {LINKS.map((link) => (
+                {LINKS.filter((link) => !("ownerOnly" in link) || admin.role === "owner").map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}

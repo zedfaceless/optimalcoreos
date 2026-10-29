@@ -21,11 +21,17 @@ messages those forms produce.
 ```bash
 pnpm install
 supabase start                 # Postgres 17, Auth, Studio, Mailpit — first run pulls images
-supabase db reset              # applies supabase/migrations/*.sql
+supabase db reset              # migrations, then supabase/seed.sql
 cp .env.example .env.local     # then fill it in; see "Environment" below
 supabase status                # prints the API URL, anon key and service_role key
 pnpm dev                       # http://localhost:3000
 ```
+
+`supabase db reset` also seeds two admins, six leads and three messages, so the console is
+usable the moment the stack is up: **owner@demo.local** (owner — Team and Audit pages) and
+**staff@demo.local** (staff — leads and messages only), both with the password
+`demo-local-1234`. The fixture is `supabase/seed.sql`; nothing in it is product data and
+production never runs it.
 
 `.env.local` is ignored by git; `.env.example` lists every key the code reads and what an
 empty one costs. `docs/PLACEHOLDERS.md` holds the values only the owner can supply — domain,
@@ -41,23 +47,26 @@ The console has no signup. An account is only an admin if a row in `public.admin
 says so, and that table has no client-facing policy — it is read with the service key after
 the session is checked.
 
-1. Open Studio at <http://localhost:54323> → **Authentication → Add user**. Set an email and
-   a password of at least 12 characters (`minimum_password_length = 12` in
-   `supabase/config.toml`). `enable_signup = false` is deliberate; a signup form would create
-   an account the allowlist then refuses.
+Locally there is nothing to do: the seed writes that row. On a hosted project the first one
+is still made by hand, because inviting needs somebody who is already allowed in:
+
+1. Open the project's dashboard → **Authentication → Add user**. Set an email and a password
+   of at least 12 characters (`minimum_password_length = 12` in `supabase/config.toml`, and
+   the same in the dashboard). `enable_signup = false` is deliberate; a signup form would
+   create an account the allowlist then refuses.
 2. Copy the new user's id and insert the allowlist row:
 
 ```sql
 insert into public.admin_users (user_id, email, display_name, role)
-values ('<uuid from Studio>', 'you@example.com', 'Your Name', 'owner');
+values ('<uuid from the dashboard>', 'you@example.com', 'Your Name', 'owner');
 ```
 
-3. Sign in at <http://localhost:3000/devside>.
+3. Sign in at `/devside`. From then on, everybody else is invited from **`/devside/team`**,
+which sends Supabase's invitation email and writes the allowlist row itself.
 
-For a hosted project, run the same insert there (SQL editor, or `supabase db push` for the
-table itself). `role` is `owner` or `admin`; `is_active` defaults to true, and setting it to
-false ends that person's access at their next page load — `requireAdmin()` re-reads the row
-on every request rather than trusting the cookie.
+`role` is `owner` or `staff`; `is_active` defaults to true, and setting it to false ends that
+person's access at their next page load — `requireAdmin()` re-reads the row on every request
+rather than trusting the cookie.
 
 ## Migrations
 
@@ -91,9 +100,10 @@ saved whether or not the mail goes out), `IP_HASH_SALT` before real traffic, and
 ## Checks
 
 ```bash
-pnpm check      # tsc --noEmit, then eslint
-pnpm test       # vitest: schemas, guards, formatters, the slot and label helpers
-pnpm build      # the real gate: server actions, next/og routes, headers
+pnpm check         # tsc --noEmit, eslint, vitest, then check:config
+pnpm test          # vitest: schemas, guards, formatters, the console's pure helpers
+pnpm check:config  # asserts the Auth settings in supabase/config.toml and the template files
+pnpm build         # the real gate: server actions, next/og routes, headers
 ```
 
 `pnpm build` is the one that catches the failures typecheck cannot see — a `next/og` route

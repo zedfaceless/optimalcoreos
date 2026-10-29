@@ -32,6 +32,7 @@ Two rules this file exists to keep:
 | `CONTACT_PUBLIC_HOURS` | `Monday to Friday, 09:00–17:00 (Asia/Manila)` | Unconfirmed opening hours would be published. |
 | `IP_HASH_SALT` | empty string | The IP hash becomes a plain unsalted SHA-256 of an address — brute-forceable in minutes over the IPv4 space. Set it before the first real submission. |
 | `DATA_RETENTION_MONTHS` | `24` | `/privacy` quotes 24 months. |
+| `NEXT_PUBLIC_VERCEL_ANALYTICS` | unset | Both Vercel scripts mount. `off` (or `false`, `0`, `no`) unmounts `<Analytics />` and `<SpeedInsights />`; anything else leaves them on. |
 | `NEXT_PUBLIC_LEGAL_UPDATED` | unset | `/privacy` and `/terms` render no "last updated" date, which is the honest state until counsel has read them. |
 
 ## Decisions the owner has to make
@@ -59,33 +60,53 @@ pretends to be finished.
   On Vercel that map protects one warm function, so a determined script gets through. The
   durable fix is a table plus one SQL function; the counter that exists today stops a
   double-submit, which is what a person actually does.
-- **There is no `/devside/reset-password`.** §14.5 names the route and a middleware that
-  would exempt it. Nothing here links to it, and it is absent from
-  `supabase/config.toml`'s `additional_redirect_urls`, because a redirect target that 404s is
-  worse than none. A locked-out admin is reset from the Supabase dashboard today; the
-  in-app flow needs a recovery template and a token exchange in `/devside`.
-- **`NEXT_PUBLIC_VERCEL_ANALYTICS` is not implemented.** §14.3 lists it as an optional
-  toggle; `<Analytics />` and `<SpeedInsights />` are always mounted in `app/layout.tsx`.
-  Both are cookieless and inert outside Vercel, which is why the missing switch is a gap and
-  not a leak.
+- **`/devside/reset-password` exists, and the hosted projects still need two clicks.** The
+  request form, the `token_hash` exchange in `/devside/auth/confirm` and the
+  `/devside/update-password` form are built and were verified end to end on the local stack
+  (request → mailbox → link → session → new password → sign-in, with a reused link refused).
+  Two things live outside this repository: `http://…/devside/auth/confirm` has to be in each
+  project's redirect allow-list, and the four templates in `supabase/templates/` have to be
+  pasted into Authentication → Emails. The dashboard's copies win, and until they are pasted
+  a hosted project sends GoTrue's stock mail pointing at GoTrue's own confirmation URL,
+  which lands on a page that cannot set a session cookie.
+- **`NEXT_PUBLIC_VERCEL_ANALYTICS` is a switch, and the default is on.** §14.3 lists it as
+  optional; `lib/site/analytics.ts` reads it and `app/layout.tsx` mounts `<Analytics />` and
+  `<SpeedInsights />` unless it says `off` (or `false`, `0`, `no`). On is the default because
+  both packages are cookieless and inert outside Vercel — the cost of leaving them mounted is
+  two no-op script tags, and the cost of a typo turning telemetry off silently is that nobody
+  notices for a month. A value that is not one of the four words is treated as unset.
 - **There is no `middleware.ts`.** §14.5 asks for one on `/devside/:path*`. The
   `X-Robots-Tag` and `Cache-Control` headers it would add are set in `next.config.ts`
   `headers()`, where they cannot be skipped by a matcher typo, and the session gate is
   `requireAdmin()` on every page and every action — the database call it needs cannot run at
   the edge anyway. What middleware would add is a faster redirect for an anonymous visitor,
   not a stronger one.
-- **The schema is three tables, not §13.** `quote_requests`, `contact_messages` and
-  `admin_users` are what the public forms write and what the console reads. Projects,
-  quotations, milestones, activities, attachments and the audit log are not built; the
-  console's status, notes and filters are columns on the two lead tables. When those tables
-  arrive, the console grows a page per table rather than a rewrite.
-- **`supabase/seed.sql` does not exist**, so `[db.seed]` is disabled in
-  `supabase/config.toml` rather than pointed at a missing file. Local data is whatever the
-  forms insert.
-- **Adding an admin is a SQL insert.** Create the account in Studio (`enable_signup = false`
-  is deliberate), then insert the matching `public.admin_users` row with the same
-  `user_id`. There is no invite flow in the console yet; the allowlist row is the gate, and
-  `admin_users_user_id_fkey` refuses a row for an account that does not exist.
+- **The schema is four tables, not §13.** `quote_requests`, `contact_messages`,
+  `admin_users` and `admin_audit_log` are what the public forms write and what the console
+  reads. Projects, quotations, milestones, activities and attachments are not built; the
+  console's status, notes and filters are columns on the two lead tables, and the audit log
+  is one append-only table rather than the per-entity history §13 sketches. When those
+  tables arrive, the console grows a page per table rather than a rewrite.
+- **`supabase/seed.sql` is a fixture with a working sign-in.** `db reset` writes two admins
+  (`owner@demo.local` as owner, `staff@demo.local` as staff, both `demo-local-1234`), six
+  leads across the pipeline and three messages. The `auth.users` and `auth.identities` rows
+  are hand-written because GoTrue has no SQL way to create a user with a password, and the
+  identities row is what the password grant actually looks up — so the seed is verified by
+  signing in, not by the reset exiting 0. There are deliberately no `admin_audit_log` rows:
+  a seeded history would be fiction, and the empty state says what writes the first line.
+- **Adding an admin is a page, and one case is still a dashboard step.** `/devside/team`
+  invites by address (Supabase's invite mail, then the `admin_users` row), promotes, demotes
+  and deactivates. Two rules keep it from locking itself out: nobody changes their own access,
+  and the last active owner cannot be deactivated — both in `lib/devside/team.ts` and both
+  re-asked inside the action. The `last-owner` branch is a backstop rather than a path a
+  person can reach: because `self` is refused first, the only row that could be the last owner
+  is the actor's own. It stays because it is cheap and it is what a future non-human caller
+  would need, but the guard a real owner meets is `self`.
+  What is still manual: an address that already has a Supabase account but no allowlist row
+  (a deactivated person re-invited, a hand-made Studio user). `inviteUserByEmail` refuses an
+  existing account with "already registered" and this build has no lookup-by-address call, so
+  the console says the invitation failed and the row is added by hand — the one step left for
+  Studio.
 - **The §15.5 bot signals are heuristics, and only one of them is a wall.** All three are
   built in `lib/validation/spam.ts` and asked once per submission by both route handlers:
   a three-second floor on `formStartedAt`, a sample blocklist of about seventy throwaway
@@ -102,6 +123,20 @@ pretends to be finished.
   honeypot path; the success answer here is `{ ok: true }` with no reference at all, and the
   wizard's success screen shows copy rather than a ticket number, so a bot sees exactly what
   a person sees and there is no second shape to keep in step.
-- **Email templates are plain HTML** in `lib/email/templates.ts`. The four branded Supabase
-  Auth emails the PRD describes are not in `supabase/templates/`, so the hosted projects
-  still send the stock invitations and recovery mails.
+- **The Auth emails are templates now, and the dashboard still decides.** `supabase/templates/`
+  holds the four branded emails (invite, recovery, confirmation, magic link), wired in
+  `supabase/config.toml`; the invite and recovery ones were checked against a real mailbox on
+  the local stack, including the `token_hash` link into `/devside/auth/confirm`. The ones
+  `lib/email/templates.ts` builds are a different set — the lead notifications sent by Resend
+  — and both are plain HTML with inline styles, because a mail client is not a browser. The
+  hosted projects keep their own copies in the dashboard, so the repository is the source of
+  the copy, not the thing that applies it.
+
+- **The audit trail has no retention rule.** `admin_audit_log` appends a row per change and
+  nothing prunes it: the ledger grants `select` and `insert` to the service key and no
+  `delete` to anybody. That is right for a trail — one that deletes itself is not one — but it
+  does not match the retention sentence on `/privacy`, which is about lead data and does not
+  mention operational logs. Either the policy grows that sentence or the purge grows a table;
+  both are the owner's call, and until then the honest answer is that the trail keeps
+  everything.
+
