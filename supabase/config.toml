@@ -68,11 +68,11 @@ enabled = true
 schema_paths = []
 
 [db.seed]
-# There is no seed file yet: the three tables in `migrations/` are written by the live
-# forms, and a fixture would only be read by nobody. Turning the step off is honest —
-# leaving `sql_paths` pointing at a missing `seed.sql` makes `db reset` fail at the end
-# of a run that otherwise succeeded, which reads like a migration problem.
-enabled = false
+# `supabase/seed.sql` seeds two admin accounts (`owner@demo.local`, `staff@demo.local`, both
+# with the password `demo-local-1234`), six leads across the pipeline and three messages, so
+# a fresh clone has a console worth signing in to. Nothing in this file is product data and
+# production never runs it — `db reset` and CI are the only callers.
+enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = ["./seed.sql"]
