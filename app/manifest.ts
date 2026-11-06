@@ -12,7 +12,12 @@ import { siteUrl } from "@/lib/site/config";
  * out in `components/site/logo.tsx`).
  *
  * The `src` values are the file-convention URLs (`/icon.jpeg`, not `/icon`): a raster
- * icon route is served under its own extension.
+ * icon route is served under its own extension. The `sizes` are the files' real pixel
+ * dimensions, read off them (`file app/icon.jpeg app/apple-icon.jpeg`) rather than
+ * assumed — both entries declared `1024x1024`, which was never true for either: the
+ * favicon is 2048² and the touch icon is 180². Next derives the `<link rel="icon">`
+ * sizes from the file, so a wrong number here breaks nothing visibly; the manifest
+ * just ends up disagreeing with the markup.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -26,8 +31,8 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: BRAND_COLOURS.navy900,
     lang: "en",
     icons: [
-      { src: "/icon.jpeg", sizes: "1024x1024", type: "image/jpeg" },
-      { src: "/apple-icon.jpeg", sizes: "1024x1024", type: "image/jpeg" },
+      { src: "/icon.jpeg", sizes: "2048x2048", type: "image/jpeg" },
+      { src: "/apple-icon.jpeg", sizes: "180x180", type: "image/jpeg" },
     ],
     /* The canonical URL is the deployment's own, read from the environment rather
        than guessed (PRD §0.4). */
