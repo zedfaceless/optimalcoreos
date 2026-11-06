@@ -93,13 +93,19 @@ jobs:
       # 200 is all a preview can honestly assert: a page can render without a
       # Supabase project, but nothing can be submitted without one, so the forms
       # are looked at here, not exercised.
+      # The icon routes carry their extension because they are files now: an
+      # `app/icon.tsx` would be served at `/icon` and generate bytes per request,
+      # and `app/icon.jpeg` is served at `/icon.jpeg` and never generated. Both
+      # answered 200 when this list was written; only the second kind still
+      # exists, so `/icon` and `/apple-icon` are 404s and this walk was failing on
+      # `main` for two merges while the site itself was fine.
       - name: Walk the routes
         run: |
           set -uo pipefail
           failed=0
           for route in / /solutions /services /how-we-work /why-us /about /contact \
                        /request-quote /privacy /terms /devside /sitemap.xml \
-                       /robots.txt /manifest.webmanifest /icon /apple-icon; do
+                       /robots.txt /manifest.webmanifest /icon.jpeg /apple-icon.jpeg; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3000$route")
             printf '%-22s %s\n' "$route" "$code"
             [ "$code" = "200" ] || failed=1
