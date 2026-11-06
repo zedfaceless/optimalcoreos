@@ -20,6 +20,16 @@ next-env.d.ts
 .env.*.local
 .env*.production
 
+# supabase CLI state — per checkout, never shared
+# `.temp/` holds the CLI's own bookkeeping (the `pgdelta` catalog hashes are a
+# fingerprint of the local container), `.branches/` remembers which branch
+# `supabase start` is on, and `snippets/` is Studio's saved queries. All three
+# are the machine's, not the project's: `docs/deploy.md` §1 already tells every
+# checkout to link its own project into `.temp/`.
+supabase/.temp/
+supabase/.branches/
+supabase/snippets/
+
 # misc
 .DS_Store
 *.pem
