@@ -4,8 +4,11 @@ import { siteUrl } from "@/lib/site/config";
 /**
  * The manifest Next serves at `/manifest.webmanifest`, which `app/layout.tsx`
  * already points at. Both icons are the supplied artwork, dropped in as the
- * `app/icon.jpeg` and `app/apple-icon.jpeg` file conventions — so the tab icon is the
- * real logo, and there is no second geometry to keep in step with the header.
+ * `app/icon.jpeg` and `app/apple-icon.jpeg` file conventions, so every icon surface
+ * is the real logo. The header is the one place that does not use it: at 32px the
+ * artwork's ribbons collapse and it reads as a navy square, so the lockup draws the
+ * same geometry instead (`components/site/brand-mark.tsx`, and the reason is spelled
+ * out in `components/site/logo.tsx`).
  *
  * The `src` values are the file-convention URLs (`/icon.jpeg`, not `/icon`): a raster
  * icon route is served under its own extension.

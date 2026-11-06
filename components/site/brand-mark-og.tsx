@@ -8,8 +8,11 @@
  * browser does, so no `transformOrigin` is needed — that property is unreliable there
  * and a wrong origin would flip the mark.
  *
- * The `light` tone assumes navy-900 (#0f1b2e), the background both icon routes and
- * the OG card paint; the arrow's knockout has to match it.
+ * The `light` tone assumes navy-900 (#0f1b2e), the background `app/opengraph-image.tsx`
+ * paints. The knockout has to match whatever surface is behind the mark or the shaft
+ * shows a seam where it crosses the rings: this file is only ever drawn on the OG card,
+ * while `brand-mark.tsx` is also drawn in the footer, which is navy-950 (#0a1220) — the
+ * two files therefore knock out different values on purpose.
  */
 const BOX = 40;
 
