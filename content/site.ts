@@ -7,9 +7,10 @@
  */
 export const BRAND = {
   name: "Optimal Core OS",
-  positioning: "Custom software built around your business — delivered in weeks, not years.",
+  positioning:
+    "Custom software for resorts, hotels and offline sites — built around your business, delivered in weeks, not years.",
   supportingLine:
-    "Systems, websites and mobile-ready apps designed for how you actually work. Small systems in 15 business days. Larger platforms in 60–90 days.",
+    "Systems for resorts and hotels, offline and desktop software, websites and mobile-ready apps. Small systems in 15 business days. Larger platforms in 60–90 days.",
 } as const;
 
 export const CTA = {

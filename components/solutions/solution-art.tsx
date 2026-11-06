@@ -186,6 +186,30 @@ function ReportingArt() {
   );
 }
 
+function OfflineArt() {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-3">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+        <span className="text-[0.5rem] font-semibold uppercase tracking-[0.08em] text-gray-600">
+          On this device
+        </span>
+        <span className="rounded-full bg-navy-950 px-1.5 py-0.5 text-[0.5rem] font-bold text-white">Offline</span>
+      </div>
+      {["Booking #4821", "Stock count", "Order #117"].map((row) => (
+        <div key={row} className="flex items-center justify-between py-1.5">
+          <span className="text-[0.625rem] font-medium text-navy-950">{row}</span>
+          <span className="rounded-full bg-accent-500/15 px-1.5 py-0.5 text-[0.5rem] font-bold text-navy-950">
+            saved
+          </span>
+        </div>
+      ))}
+      <div className="mt-1.5 rounded bg-brand-50 px-2 py-1 text-center text-[0.5rem] font-semibold text-brand-600">
+        3 records waiting to sync
+      </div>
+    </div>
+  );
+}
+
 const ARTS: Record<Solution["art"], () => React.JSX.Element> = {
   inventory: InventoryArt,
   orders: OrdersArt,
@@ -195,6 +219,7 @@ const ARTS: Record<Solution["art"], () => React.JSX.Element> = {
   field: FieldArt,
   mvp: MvpArt,
   reporting: ReportingArt,
+  offline: OfflineArt,
 };
 
 export function SolutionArt({

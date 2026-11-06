@@ -1,6 +1,6 @@
 import { DELIVERY } from "@/content/site";
 
-export type SolutionSize = "small" | "large";
+export type SolutionSize = "small" | "large" | "quoted";
 
 export type Solution = {
   /** Anchor id, e.g. `/solutions#inventory-and-pos`. */
@@ -10,21 +10,57 @@ export type Solution = {
   system: string;
   outcomes: [string, string, string];
   size: SolutionSize;
-  art: "inventory" | "orders" | "invoicing" | "team" | "website" | "field" | "mvp" | "reporting";
+  art: "inventory" | "orders" | "invoicing" | "team" | "website" | "field" | "mvp" | "reporting" | "offline";
   alt: string;
 };
 
 const SMALL = `Small system · ${DELIVERY.small}`;
 const LARGE = `Larger system · ${DELIVERY.large}`;
+/**
+ * Used where scope, not size, decides the timeline. It reuses the existing promise
+ * wording ("timelines start after written scope"), so resort and offline work makes
+ * no new delivery claim.
+ */
+const QUOTED = "Scope confirmed · Timeline confirmed in your quotation";
 
 export function solutionTimeline(size: SolutionSize): string {
-  return size === "small" ? SMALL : LARGE;
+  if (size === "small") return SMALL;
+  if (size === "large") return LARGE;
+  return QUOTED;
 }
 
 export const solutions: Solution[] = [
   {
-    id: "inventory-and-pos",
+    id: "resort-and-hospitality",
     number: 1,
+    problem: "Bookings, housekeeping and the restaurant each live in a different book.",
+    system: "Resort & Hospitality Management System",
+    outcomes: [
+      "Rooms, bookings and check-in on one screen",
+      "Housekeeping and maintenance tracked as the work happens",
+      "One owner dashboard for the whole property",
+    ],
+    size: "quoted",
+    art: "orders",
+    alt: "Booking board with three columns: New, In progress, Completed.",
+  },
+  {
+    id: "offline-first-software",
+    number: 2,
+    problem: "Our internet drops, and the system has to keep working when it does.",
+    system: "Offline-First / Desktop Software",
+    outcomes: [
+      "Keeps running with no connection",
+      "A desktop install or a local network",
+      "Syncs to the cloud when you reconnect",
+    ],
+    size: "quoted",
+    art: "offline",
+    alt: "Desktop window listing records saved on this device, with an offline badge and a pending-sync count.",
+  },
+  {
+    id: "inventory-and-pos",
+    number: 3,
     problem: "I can't tell what's in stock.",
     system: "Inventory & Point-of-Sale System",
     outcomes: ["Real-time stock counts", "Low-stock alerts", "Sales and daily reports"],
@@ -34,7 +70,7 @@ export const solutions: Solution[] = [
   },
   {
     id: "orders-and-bookings",
-    number: 2,
+    number: 4,
     problem: "Orders and bookings live in chat messages.",
     system: "Order & Booking Management",
     outcomes: ["One list of every order", "Status tracking", "Automatic confirmations"],
@@ -44,7 +80,7 @@ export const solutions: Solution[] = [
   },
   {
     id: "invoicing-and-books",
-    number: 3,
+    number: 5,
     problem: "Billing and records are manual.",
     system: "Invoicing & Bookkeeping System",
     outcomes: ["Faster invoices", "Fewer errors", "Owner-ready summaries"],
@@ -54,7 +90,7 @@ export const solutions: Solution[] = [
   },
   {
     id: "multi-branch",
-    number: 4,
+    number: 6,
     problem: "My staff and branches aren't aligned.",
     system: "Multi-branch / Team Management",
     outcomes: ["Roles and permissions", "Branch-level reports", "Activity history"],
@@ -64,7 +100,7 @@ export const solutions: Solution[] = [
   },
   {
     id: "business-website",
-    number: 5,
+    number: 7,
     problem: "My website doesn't bring in customers.",
     system: "Business Website & Lead Capture",
     outcomes: ["Clear structure", "Fast on phones", "Inquiry forms that reach you instantly"],
@@ -74,7 +110,7 @@ export const solutions: Solution[] = [
   },
   {
     id: "field-app",
-    number: 6,
+    number: 8,
     problem: "My team works in the field.",
     system: "Mobile-Ready Field App (PWA)",
     outcomes: ["Works on phones", "Capture data on site", "Syncs to the main system"],
@@ -84,7 +120,7 @@ export const solutions: Solution[] = [
   },
   {
     id: "mvp",
-    number: 7,
+    number: 9,
     problem: "I need an MVP before I spend big.",
     system: "Rapid Product Build (MVP)",
     outcomes: ["Working product quickly", "Real users test early", "Room to grow"],
@@ -94,7 +130,7 @@ export const solutions: Solution[] = [
   },
   {
     id: "dashboards",
-    number: 8,
+    number: 10,
     problem: "I need to see my numbers.",
     system: "Reporting & Dashboards",
     outcomes: ["Live KPIs", "Exportable reports", "One source of truth"],
@@ -106,7 +142,8 @@ export const solutions: Solution[] = [
 
 export const solutionsPage = {
   title: "Real business problems. Practical systems.",
-  subtitle: "Find your situation below. Each one is a system we can design and deliver.",
+  subtitle:
+    "Find your situation below. Each one is a system we can design and deliver — online, on your local network, or with no internet at all.",
   ctaHeading: "Don't see your situation? Describe it.",
   ctaBody: "A short conversation is usually enough to tell you what a system would take.",
 } as const;

@@ -1,8 +1,8 @@
 export type Faq = { question: string; answer: string };
 
 /**
- * §7.8. Question 1–6 are reused on How We Work and Request Quote; the whole list
- * appears here and drives the FAQPage JSON-LD.
+ * §7.8. The first three appear on the home page; the whole list appears on How We
+ * Work and drives the FAQPage JSON-LD.
  */
 export const faqs: Faq[] = [
   {
@@ -14,6 +14,16 @@ export const faqs: Faq[] = [
     question: "How much does it cost?",
     answer:
       "Every project is studied individually. We prepare a quotation after you describe what you want to solve. Start with a free virtual meeting.",
+  },
+  {
+    question: "Can you build for my resort?",
+    answer:
+      "Yes. We build for small hotels, beach resorts, homestays and travel operators: room and booking management, front desk and check-in/out, housekeeping and maintenance tracking, restaurant, bar or cafe POS, kitchen and supply inventory, activity and tour bookings, staff scheduling, billing, and owner dashboards across the property. Most properties start with one piece — usually bookings or the front desk — and add the rest afterwards.",
+  },
+  {
+    question: "Will it work without internet?",
+    answer:
+      "Yes, when your site needs it. A PWA installs to a phone but still needs a connection for most of its work; true offline software keeps running with the internet unplugged — a desktop app on your own computers, a system on your local network, or an offline-first app that saves work on the device and syncs when a connection returns. We confirm which one fits your site before quoting.",
   },
   {
     question: "What do I need to prepare for the meeting?",
@@ -45,4 +55,8 @@ export const faqs: Faq[] = [
 ];
 
 export const miniFaq = faqs.slice(0, 3);
-export const processFaq = faqs.slice(0, 6);
+/**
+ * Every question. This used to be `faqs.slice(0, 6)`, which meant a question could be
+ * written here and never appear on the page the home section links to.
+ */
+export const processFaq = faqs;

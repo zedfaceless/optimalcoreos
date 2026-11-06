@@ -17,8 +17,8 @@ export function Footer() {
         <div className="space-y-4">
           <Logo tone="light" />
           <p className="max-w-[34ch] text-sm leading-relaxed text-white/70">
-            Custom systems, websites and mobile-ready apps for business owners — designed around how
-            your business actually runs.
+            Systems for resorts and hotels, offline and desktop software, websites and mobile apps —
+            designed around how your business actually runs.
           </p>
           <a
             href={`mailto:${settings.email}`}

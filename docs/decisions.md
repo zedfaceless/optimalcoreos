@@ -178,3 +178,38 @@ A static export would have required deleting the server actions and the `next/og
 satisfy `output: 'export'`, which previews a different site, not this one. The tunnel is
 temporary in the way the file itself says: random URL, public to anyone holding it, gone when
 the run ends or is cancelled. When a real host exists, delete the file; nothing else reads it.
+
+**Production goes to Vercel through its Git integration, and the second path gets deleted.**
+The repository carried two ways to reach production — `.github/workflows/deploy.yml`, which
+builds with the Vercel CLI and ships the artefact CI tested, and importing the project into
+Vercel and letting it build every push. Both work; keeping both means two things can create a
+production deployment from the same commit, which is how a site ends up serving a build
+nobody can identify. The Git integration wins because it is the path that needs no secret in
+this repository and no runner minutes to maintain, and the workflow is inert (a notice, not a
+red cross) only for as long as `VERCEL_TOKEN` does not exist — one secret away from being
+live by accident. So `docs/deploy.md` says `git rm .github/workflows/deploy.yml` as a deploy
+step. What that gives up is the property the workflow existed for: that what goes live is
+byte-for-byte what `pnpm check` and `pnpm build` just passed. `ci.yml` still gates the merge,
+so the gap is a rebuild on a different machine, not an untested commit.
+
+**Two hosted settings are not in the repository, and one of them silently breaks the console.**
+`supabase/config.toml` closes signup and sets a twelve-character password floor, but those are
+GoTrue settings living in the hosted project; a fresh project keeps the permissive defaults
+and accepts exactly what the local stack rejects. `supabase config push` can apply the local
+`[auth]` section, which is less error-prone than two dashboard toggles — with one trap worth
+naming: the push is whole-section, so it also carries `[auth] site_url` and the redirect
+allowlist, which locally name `127.0.0.1`. An invitation then arrives pointing at localhost.
+The runbook therefore orders the URL configuration *after* the push and says why, and keeps
+the dashboard route as an equal option, because the outcome is the same and one of the two
+mechanisms will be missing from a given CLI version.
+
+**The built-in mailer is a test fixture, so custom SMTP is a deploy step.** Supabase provides
+default SMTP so templates can be rendered before a mail provider exists, and its own
+documentation states the limits plainly: messages go only to addresses on the project's team,
+the rate limit is two per hour and can change without notice, and there is no SLA. For this
+app that is not a rough edge, it is a broken console — `/devside/team` invites and password
+recovery both send mail, so with the default service a new staff member never receives
+anything and the Auth log says "Email address not authorized". Resend is already the provider
+for lead notifications, and it offers SMTP on the same account, so `docs/deploy.md` §4 lists
+its host, ports, username and key. The alternative, a Send Email hook, is more control than
+this needs: it would mean a second endpoint to keep alive in order to send four templates.
