@@ -11,13 +11,13 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 export const hero = {
-  eyebrow: "Custom software for business owners",
-  titleLead: "Software built around ",
-  titleEmphasis: "your business",
-  titleTail: " — not the other way around.",
+  eyebrow: "Resorts, hotels and offline software",
+  titleLead: "Run your resort from one screen. ",
+  titleEmphasis: "Keep working",
+  titleTail: " when the internet doesn't.",
   subtitle:
-    "Systems, websites and mobile-ready apps designed for how you actually work. Small systems delivered in 15 business days.",
-  trust: ["Plain-English scoping", "Fixed timelines", "You own your system"],
+    "Bookings, front desk, housekeeping, restaurant POS and owner reports in one system — and offline software for sites where the internet is weak, expensive or missing. Small systems in 15 business days.",
+  trust: ["Built for resorts and hotels", "Works with no internet", "You own your system"],
   visualAlt:
     "Illustration of a business dashboard on a laptop and a phone showing the same system, with charts, an orders table and a stock-level card.",
 } as const;
@@ -48,7 +48,7 @@ export const painPoints: PainPoint[] = [
 ];
 
 export type ServiceCard = {
-  key: "systems" | "website" | "pwa";
+  key: "systems" | "website" | "pwa" | "offline";
   title: string;
   description: string;
   bullets: string[];
@@ -83,6 +83,15 @@ export const serviceCards: ServiceCard[] = [
     bullets: ["Works in the phone browser", "Installable to the home screen", "Secure login and roles"],
     href: "/services#mobile-ready-apps",
     alt: "Smartphone showing an installable app icon on a home screen",
+  },
+  {
+    key: "offline",
+    title: "Offline & Desktop Software",
+    description:
+      "Software that keeps working with no internet at all: desktop apps, local-network systems, and offline-first apps that sync when a connection returns.",
+    bullets: ["Runs with no connection", "Desktop or local network", "Syncs when you reconnect"],
+    href: "/services#offline-and-desktop",
+    alt: "Desktop window showing records saved on the device, waiting to sync",
   },
 ];
 
@@ -121,12 +130,13 @@ export const reasonsPreview: ReasonPreview[] = [
 ];
 
 export const industries = [
+  "Resorts, Hotels & Hospitality",
+  "Remote & Offline Operations",
   "Retail & Stores",
   "Distribution",
   "Clinics & Healthcare",
   "Schools & Training",
   "Logistics",
-  "Food & Hospitality",
   "Manufacturing",
   "Agriculture",
   "Real Estate",

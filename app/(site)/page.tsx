@@ -15,9 +15,9 @@ import { SolutionsPreview } from "@/components/home/solutions-preview";
 import { faqJsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Custom Software for Business Owners",
+  title: "Resort Systems & Offline Software",
   description:
-    "Custom systems, websites and mobile-ready apps built around how your business runs. Small systems in 15 business days. Request a free consultation.",
+    "Custom systems for resorts and hotels — bookings, front desk, housekeeping, POS — plus offline software that works with no internet.",
   alternates: { canonical: "/" },
 };
 

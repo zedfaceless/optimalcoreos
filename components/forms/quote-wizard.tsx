@@ -638,6 +638,14 @@ export function QuoteWizard({
 function projectTypeFromTopic(topic: string | undefined): string {
   if (!topic) return "Not sure yet";
   const value = topic.toLowerCase();
+  /* Resort and offline are checked first: the solution names they arrive as also
+     contain "system", which used to swallow both into "Custom business system". */
+  if (value.includes("resort") || value.includes("hospitality") || value.includes("hotel")) {
+    return "Resort / hospitality system";
+  }
+  if (value.includes("offline") || value.includes("desktop") || value.includes("local network")) {
+    return "Offline / desktop software";
+  }
   if (value.includes("inventory") || value.includes("pos")) return "Inventory / POS";
   if (value.includes("booking") || value.includes("order")) return "Booking / order management";
   if (value.includes("report") || value.includes("dashboard")) return "Reporting & dashboards";

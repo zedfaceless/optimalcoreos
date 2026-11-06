@@ -12,10 +12,10 @@ export function ServicesPreview() {
       <div className="shell">
         <SectionHeading
           eyebrow="What we build"
-          title="Three kinds of work, one team."
-          body="A system, a website, or both — designed together so your data does not stop at the edge of the screen."
+          title="Four kinds of work, one team."
+          body="A system, a website, a phone app or a true offline install — designed together so your data does not stop at the edge of the screen, or at the edge of a signal."
         />
-        <ul className="mt-10 grid gap-5 md:grid-cols-3">
+        <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {serviceCards.map((card, index) => (
             <li key={card.key}>
               <Reveal delay={index * 70} className="h-full">

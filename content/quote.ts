@@ -3,6 +3,8 @@ import { MEETING_TIMEZONE } from "@/lib/site/meetings";
 /** Form options for the quote wizard (§10.3). Pure data: no icons, no env. */
 
 export const PROJECT_TYPES = [
+  "Resort / hospitality system",
+  "Offline / desktop software",
   "Custom business system",
   "Business website",
   "Mobile-ready app (PWA)",
