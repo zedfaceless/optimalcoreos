@@ -1,16 +1,17 @@
 import { cn } from "@/lib/utils";
 
 /**
- * The three service illustrations (§7.2). They are abstract on purpose: a shape a
- * reader recognises (modules, a browser, a phone) says more than a stock photo, and
- * each one carries the `alt` copy from `content/services.ts`.
+ * The four service illustrations (§7.2). They are abstract on purpose: a shape a
+ * reader recognises (modules, a browser, a phone, a window without a signal) says
+ * more than a stock photo, and each one carries the `alt` copy from
+ * `content/services.ts`.
  */
 export function ServiceArt({
   art,
   alt,
   className,
 }: {
-  art: "systems" | "website" | "pwa";
+  art: "systems" | "website" | "pwa" | "offline";
   alt: string;
   className?: string;
 }) {
@@ -71,6 +72,30 @@ export function ServiceArt({
                 className={cn("aspect-square rounded-[3px]", cell === 1 ? "bg-brand-600" : "bg-brand-50")}
               />
             ))}
+          </div>
+        </div>
+      ) : null}
+
+      {art === "offline" ? (
+        <div className="mx-auto max-w-[13rem] rounded-lg border border-gray-200 bg-white shadow-card">
+          <div className="flex items-center justify-between border-b border-gray-200 px-2.5 py-2">
+            <span className="h-1.5 w-10 rounded-full bg-gray-200" />
+            <span className="rounded-full bg-navy-950 px-1.5 py-0.5 text-[0.5rem] font-bold text-white">
+              Offline
+            </span>
+          </div>
+          <div className="space-y-1.5 p-3">
+            {[0, 1, 2].map((row) => (
+              <div key={row} className="flex items-center gap-2">
+                <span className="size-1.5 rounded-[1px] bg-brand-600" />
+                <span className="h-1.5 flex-1 rounded-full bg-gray-50" />
+                <span className="h-1.5 w-6 rounded-full bg-gray-200" />
+              </div>
+            ))}
+            <div className="mt-2 flex items-center justify-between rounded bg-brand-50 px-2 py-1">
+              <span className="text-[0.5rem] font-semibold text-brand-600">3 waiting to sync</span>
+              <span className="size-1.5 rounded-full bg-accent-500" />
+            </div>
           </div>
         </div>
       ) : null}

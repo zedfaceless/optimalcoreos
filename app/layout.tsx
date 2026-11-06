@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { vercelAnalyticsEnabled } from "@/lib/site/analytics";
+import { BRAND_COLOURS } from "@/lib/site/brand";
 import { siteUrl } from "@/lib/site/config";
 import "./globals.css";
 
@@ -22,11 +23,11 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: "Custom Software for Business Owners | Optimal Core OS",
+    default: "Resort Systems & Offline Software | Optimal Core OS",
     template: "%s | Optimal Core OS",
   },
   description:
-    "We build custom systems, websites and mobile-ready apps around how your business runs. Small systems in 15 business days. Request a free consultation.",
+    "Custom systems for resorts and hotels — bookings, front desk, housekeeping, POS — plus offline software that works with no internet.",
   applicationName: "Optimal Core OS",
   alternates: { canonical: "/" },
   openGraph: {
@@ -34,15 +35,15 @@ export const metadata: Metadata = {
     siteName: "Optimal Core OS",
     locale: "en",
     url: "/",
-    title: "Custom Software for Business Owners | Optimal Core OS",
+    title: "Resort Systems & Offline Software | Optimal Core OS",
     description:
-      "Custom systems, websites and mobile-ready apps, built around how your business actually works. Small systems in 15 business days.",
+      "Bookings, front desk, housekeeping, POS and owner dashboards for resorts — plus software that keeps working with no internet.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Custom Software for Business Owners | Optimal Core OS",
+    title: "Resort Systems & Offline Software | Optimal Core OS",
     description:
-      "Custom systems, websites and mobile-ready apps, built around how your business actually works.",
+      "Resort and hotel systems, and offline software that keeps working with no internet.",
   },
   manifest: "/manifest.webmanifest",
   robots: { index: true, follow: true },
@@ -51,7 +52,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0F1B2E",
+  themeColor: BRAND_COLOURS.navy900,
   colorScheme: "light",
 };
 

@@ -1,24 +1,38 @@
 import type { MetadataRoute } from "next";
+import { BRAND_COLOURS } from "@/lib/site/brand";
 import { siteUrl } from "@/lib/site/config";
 
 /**
  * The manifest Next serves at `/manifest.webmanifest`, which `app/layout.tsx`
- * already points at. Icons come from `app/icon.tsx` and `app/apple-icon.tsx`, so
- * there is exactly one set to keep in step with the brand mark.
+ * already points at. Both icons are the supplied artwork, dropped in as the
+ * `app/icon.jpeg` and `app/apple-icon.jpeg` file conventions, so every icon surface
+ * is the real logo. The header is the one place that does not use it: at 32px the
+ * artwork's ribbons collapse and it reads as a navy square, so the lockup draws the
+ * same geometry instead (`components/site/brand-mark.tsx`, and the reason is spelled
+ * out in `components/site/logo.tsx`).
+ *
+ * The `src` values are the file-convention URLs (`/icon.jpeg`, not `/icon`): a raster
+ * icon route is served under its own extension. The `sizes` are the files' real pixel
+ * dimensions, read off them (`file app/icon.jpeg app/apple-icon.jpeg`) rather than
+ * assumed — both entries declared `1024x1024`, which was never true for either: the
+ * favicon is 2048² and the touch icon is 180². Next derives the `<link rel="icon">`
+ * sizes from the file, so a wrong number here breaks nothing visibly; the manifest
+ * just ends up disagreeing with the markup.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Optimal Core OS",
     short_name: "Optimal Core",
-    description: "Custom systems, websites and mobile-ready apps, built around how your business runs.",
+    description:
+      "Custom systems for resorts and hotels, offline and desktop software, websites and mobile-ready apps.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#0f1b2e",
+    background_color: BRAND_COLOURS.white,
+    theme_color: BRAND_COLOURS.navy900,
     lang: "en",
     icons: [
-      { src: "/icon", sizes: "64x64", type: "image/png" },
-      { src: "/apple-icon", sizes: "180x180", type: "image/png" },
+      { src: "/icon.jpeg", sizes: "2048x2048", type: "image/jpeg" },
+      { src: "/apple-icon.jpeg", sizes: "180x180", type: "image/jpeg" },
     ],
     /* The canonical URL is the deployment's own, read from the environment rather
        than guessed (PRD §0.4). */

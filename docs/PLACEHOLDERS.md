@@ -130,7 +130,11 @@ pretends to be finished.
   `lib/email/templates.ts` builds are a different set — the lead notifications sent by Resend
   — and both are plain HTML with inline styles, because a mail client is not a browser. The
   hosted projects keep their own copies in the dashboard, so the repository is the source of
-  the copy, not the thing that applies it.
+  the copy, not the thing that applies it. And the same is true of the sending service: a hosted
+  project that has not been given custom SMTP uses Supabase's own, which delivers only to
+  addresses on the project's team and two messages an hour — so an invitation or a recovery
+  mail does not reach a real staff member until the Resend SMTP settings in `docs/deploy.md` §4
+  are saved.
 
 - **The audit trail has no retention rule.** `admin_audit_log` appends a row per change and
   nothing prunes it: the ledger grants `select` and `insert` to the service key and no

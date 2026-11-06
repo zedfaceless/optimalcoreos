@@ -13,7 +13,7 @@ import { buttonClass } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "Solutions",
   description:
-    "Inventory and POS, order and booking management, invoicing, multi-branch operations, websites, field apps and reporting — the systems we design and deliver.",
+    "Resort and hospitality management, offline-first and desktop software, inventory and POS, bookings, invoicing, multi-branch operations and reporting.",
   alternates: { canonical: "/solutions" },
 };
 

@@ -143,26 +143,33 @@ site, not a test of the signups. Delete the file when a real host exists.
 
 ## Deploy
 
-1. Create the hosted Supabase project, set the region close to the visitors (`sin1` is the
-   recommendation for a Philippines-based operation), and copy its keys into Vercel.
-2. In the hosted project's dashboard, match the local stack: **Authentication → Sign In /
-   Providers → disable "Allow new users to sign up"**, and **Auth → Settings → minimum
-   password length 12**. These two live in the dashboard, not in this repository, and a
-   hosted project that keeps the defaults accepts what `supabase/config.toml` rejects.
-   Disable the signup *toggle*, not the Email *provider*: the provider is
-   `GOTRUE_EXTERNAL_EMAIL_ENABLED`, and with it off GoTrue answers every password grant
-   with "Email logins are disabled", so nobody can reach `/devside` at all.
-3. `supabase link --project-ref <ref>` then `supabase db push`.
-4. Import the repository into Vercel, set the same environment variables for Production and
-   Preview, and deploy. Set `NEXT_PUBLIC_SITE_URL` per environment so a preview links to
-   itself. That is the path this repository recommends; to have Actions ship the artefact
-   instead, add the three `VERCEL_*` secrets and delete `.github/workflows/deploy.yml` — see
-   "In GitHub Actions" above.
+`docs/deploy.md` is the procedure: Supabase project, schema, Auth parity, SMTP, Vercel, the
+first admin row, and a verification block that is safe to run against production. It is
+written to be run top to bottom once. The short version, with the three steps that are
+easiest to skip and cost the most when you do:
+
+1. Create the hosted Supabase project (`sin1` — Singapore — is the region recommendation for
+   a Philippines-based operation), then `supabase link --project-ref <ref>` and
+   `supabase db push`. The seed does not run: a pushed project starts empty, on purpose.
+2. Match the local Auth settings in the hosted project — signup closed, minimum password
+   length 12 — with `supabase config push` or the two dashboard toggles in `config.toml`'s
+   comment. Disable the signup *toggle*, not the Email *provider*: the provider is
+   `GOTRUE_EXTERNAL_EMAIL_ENABLED`, and with it off GoTrue answers every password grant with
+   "Email logins are disabled", so nobody can reach `/devside` at all.
+3. **Configure custom SMTP.** The built-in mailer sends two messages an hour, only to
+   addresses on the project's team, and Supabase documents it as not for production — so
+   without this, invitations and recovery mail silently never arrive. The Resend settings
+   are in the runbook.
+4. Import the repository into Vercel, set **Settings → Git → Production Branch** to the branch
+   you merge into (`release/**`; left at the `main` default every deployment is a Preview and
+   the domain never serves this code — `docs/deploy.md` §5), set the environment variables for
+   Production and Preview (`docs/deploy.md` §5 has the table, and which four a deploy cannot
+   run without), then delete the other path: `git rm .github/workflows/deploy.yml`. One way to
+   production, not two racing for it.
 5. Insert the first `public.admin_users` row in the hosted database, then sign in at
    `/devside`.
-6. Verify a deploy: `curl -sI https://<domain>/devside | grep -i x-robots-tag` should answer
-   `noindex, nofollow, noarchive`, and `curl -s https://<domain>/sitemap.xml` should list the
-   real origin, not localhost.
+6. Verify: the block in `docs/deploy.md` §7. `/devside` must answer an `X-Robots-Tag` naming
+   `noindex`, and `sitemap.xml` must name the real origin, not localhost.
 
 ## Rotating keys
 
@@ -186,6 +193,6 @@ site, not a test of the signups. Delete the file when a real host exists.
 | `lib/**` | Supabase clients, validation schemas, the API guard, email, devside auth and formatting, site settings |
 | `components/**` | `site/` (header, footer, sections, mockups), `forms/` (quote wizard, contact form), `devside/`, `ui/` |
 | `supabase/migrations/**` | The schema, in timestamped SQL |
-| `docs/` | `PLACEHOLDERS.md` (what only the owner can supply, and what is deliberately unfinished), `decisions.md` (the calls made while building, and why) |
+| `docs/` | `deploy.md` (the Supabase + Vercel procedure, and the failure modes it is written against), `PLACEHOLDERS.md` (what only the owner can supply, and what is deliberately unfinished), `decisions.md` (the calls made while building, and why) |
 | `.github/workflows/**` | `ci.yml` — typecheck, lint, tests and a production build on every pull request into `main`. `deploy.yml` — the optional Vercel CLI deploy, inert until its three secrets exist |
 

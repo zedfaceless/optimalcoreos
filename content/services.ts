@@ -1,10 +1,12 @@
-export type ServiceArt = "systems" | "website" | "pwa";
+export type ServiceArt = "systems" | "website" | "pwa" | "offline";
 
 export type Service = {
   id: string;
   title: string;
   short: string;
   intro: string;
+  /** Optional plain-English note rendered under the intro — used where a card needs qualifying. */
+  note?: string;
   examples: string;
   deliverables: string[];
   art: ServiceArt;
@@ -19,7 +21,9 @@ export const services: Service[] = [
       "Internal tools that replace the spreadsheet, the notebook and the group chat with one place your team can trust.",
     intro:
       "Inventory and point of sale, bookkeeping, scheduling, multi-branch operations and reporting — built to match the way your business already runs, then improved where it should.",
-    examples: "Inventory trackers, point of sale, booking systems, multi-branch operations, reporting dashboards.",
+    note: "Most of this work is for resorts and hospitality: room and booking management, front desk and check-in/out, housekeeping and maintenance tracking, restaurant or bar POS, kitchen and supply inventory, activity and tour bookings, staff scheduling, billing, and owner dashboards across the whole property.",
+    examples:
+      "Inventory trackers, point of sale, resort front desk and housekeeping, multi-branch operations, reporting dashboards.",
     deliverables: [
       "A written requirements document",
       "Designed screens you can review before build",
@@ -67,6 +71,26 @@ export const services: Service[] = [
     art: "pwa",
     alt: "Smartphone showing an installable app icon on a home screen",
   },
+  {
+    id: "offline-and-desktop",
+    title: "Offline & Desktop Software",
+    short:
+      "Software that does its job with no internet at all — on a computer in the office, on your own local network, or on a device that syncs when a connection returns.",
+    intro:
+      "Built for places where the connection is weak, expensive or missing: remote resorts and islands, farms, warehouses, field sites, clinics and schools. A desktop app installed on your machines, a system running on the local network with no outside line, or an offline-first app that stores work on the device and syncs to the cloud when it can.",
+    note: "A PWA is a website that installs to a phone and still needs a connection for most of its work. True offline software keeps running with the internet unplugged — that difference is the whole point of this service.",
+    examples:
+      "Front desk that keeps taking bookings during an outage, stock and sales on the local network, field and site forms, clinic records in low-signal areas.",
+    deliverables: [
+      "A desktop or local-network install, set up on your machines",
+      "Offline storage that survives a closed laptop or a power cut",
+      "Sync to the cloud, or between devices, when a connection returns",
+      "A clear conflict rule for records edited in two places",
+      "Installation, training and handover",
+    ],
+    art: "offline",
+    alt: "Desktop window listing records saved on the device, with an offline badge and a pending-sync count",
+  },
 ];
 
 export const included = [
@@ -101,5 +125,5 @@ export const technology = {
 
 export const servicesPage = {
   title: "What we build.",
-  subtitle: "Three kinds of work. One accountable team.",
+  subtitle: "Four kinds of work. One accountable team.",
 } as const;

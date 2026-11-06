@@ -13,7 +13,7 @@ import { buttonClass } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "Services",
   description:
-    "Custom business systems, business websites and platforms, and mobile-ready apps — what each one includes, who it suits and how long it takes.",
+    "Systems for resorts and hotels, offline and desktop software, websites and mobile-ready apps — what each includes, who it suits and how long it takes.",
   alternates: { canonical: "/services" },
 };
 
@@ -51,6 +51,11 @@ export default function ServicesPage() {
                   <div className={index % 2 === 1 ? "md:order-1" : undefined}>
                     <h2 className="text-2xl font-bold text-navy-950">{service.title}</h2>
                     <p className="mt-3 text-[1.0625rem] leading-relaxed text-gray-600">{service.intro}</p>
+                    {service.note ? (
+                      <p className="mt-3 rounded-lg border border-brand-600/15 bg-brand-50/60 px-4 py-3 text-[0.9375rem] leading-relaxed text-gray-600">
+                        {service.note}
+                      </p>
+                    ) : null}
                     <h3 className="mt-6 text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-gray-600">
                       What you receive
                     </h3>
