@@ -160,10 +160,12 @@ easiest to skip and cost the most when you do:
    addresses on the project's team, and Supabase documents it as not for production — so
    without this, invitations and recovery mail silently never arrive. The Resend settings
    are in the runbook.
-4. Import the repository into Vercel, set the environment variables for Production and
-   Preview (`docs/deploy.md` §5 has the table, and which four a deploy cannot run without),
-   then delete the other path: `git rm .github/workflows/deploy.yml`. One way to production,
-   not two racing for it.
+4. Import the repository into Vercel, set **Settings → Git → Production Branch** to the branch
+   you merge into (`release/**`; left at the `main` default every deployment is a Preview and
+   the domain never serves this code — `docs/deploy.md` §5), set the environment variables for
+   Production and Preview (`docs/deploy.md` §5 has the table, and which four a deploy cannot
+   run without), then delete the other path: `git rm .github/workflows/deploy.yml`. One way to
+   production, not two racing for it.
 5. Insert the first `public.admin_users` row in the hosted database, then sign in at
    `/devside`.
 6. Verify: the block in `docs/deploy.md` §7. `/devside` must answer an `X-Robots-Tag` naming

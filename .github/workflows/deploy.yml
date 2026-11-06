@@ -1,9 +1,11 @@
 name: Deploy
 
 # Two ways to get this repository onto Vercel, and the README documents the first
-# one: import the project, let Vercel's Git integration build every push to `main`.
-# Then this workflow is redundant and should be deleted rather than left to double
-# deploy.
+# one: import the project, let Vercel's Git integration build the production
+# branch (set under Settings -> Git, and not necessarily `main` — see
+# `docs/deploy.md` §5). Then this workflow is redundant and should be deleted
+# rather than left to double deploy. Note its trigger below is `main`, so it only
+# matches that decision while `main` is the production branch.
 #
 # This is the second way, for the case where the thing that goes live should be the
 # thing CI just built and tested, not a rebuild on somebody else's machine. It stays

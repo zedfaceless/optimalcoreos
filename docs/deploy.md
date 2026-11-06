@@ -163,8 +163,38 @@ commands at their defaults (`pnpm` is picked up from `packageManager` in `packag
 Set **Node.js Version** under Project Settings to whatever `.nvmrc` says, so the build
 matches CI rather than whatever Vercel defaults to that month.
 
+**The production branch — the one setting that decides Production or Preview.** Vercel labels
+exactly one branch per project *Production*. Everything else is a *Preview* deployment, feature
+branches and release branches alike, and a feature branch can never be anything else. The
+default is `main`; this repository's merges land on `release/YYYY-MM-DD`, so a project left at
+the default deploys nothing to the domain — every row in the Deployments tab reads **Preview**,
+the site only answers on a `*-git-*.vercel.app` link that changes with every push, and nothing
+is broken. It is one switch pointing at the wrong branch.
+
+Pick one and write down which:
+
+- **Ship from the release branch.** Settings → Git → **Production Branch** → the branch you
+  actually merge into (`release/2026-10-29` today). The next push or merge to it cuts a
+  Production deployment and the domain follows. The cost is one dashboard change each time a
+  release branch is cut, and forgetting it looks exactly like this problem again.
+- **Keep `main` as Production** — the conventional shape, and what `.github/workflows/ci.yml`
+  and `preview.yml` are written around — and merge the release branch into `main` when you
+  ship. Nothing to configure, but the site then updates on a release merge rather than when
+  the release branch moves.
+
+Two things follow. **Domains attach only to Production**: Settings → Domains lists the
+environment a domain belongs to, and no preview URL will ever answer on the real domain however
+healthy its build. And **the switch is not retroactive** — deployments already made keep their
+label, so after changing it press *Redeploy* on one (Deployments → ⋯ → Redeploy) or push a
+commit before concluding anything. From the CLI the same rule has another face: `vercel deploy`
+is a Preview, and only `--prod` — as in `vercel build --prod` then `deploy --prebuilt --prod`,
+which is what `.github/workflows/deploy.yml` runs — creates a Production deployment. `vercel ls`
+prints the environment of each row.
+
 There is no `vercel.json` and there should not be: the framework preset already knows how
-to build this, and a hand-written config is one more thing that can disagree with it.
+to build this, a hand-written config is one more thing that can disagree with it, and none of
+the settings above can live in a file anyway — the production branch is project state, not
+repository state.
 
 Environment variables — set for **Production** and **Preview**. Only the first one differs
 between them:
@@ -203,6 +233,11 @@ Until it is deleted it stays harmless — it notices "Deploy skipped" rather tha
 for as long as the three `VERCEL_*` secrets do not exist. Adding those secrets is the
 opposite decision: it makes Actions ship the artefact CI built and tested, and then this
 section's Git integration should be switched off instead.
+
+It also triggers on `main` alone, which is the other reason the two decisions cannot be mixed:
+with the production branch set to `release/**` above, adding those three secrets would build
+`main` and push it with `--prod`, publishing code that is not the release to the domain that
+serves the release. Delete-or-commit, never both.
 
 `.github/workflows/preview.yml` has the same ending, one step later and for a different
 reason: it exists because there was no host. Once Vercel serves production, the preview run
@@ -274,6 +309,8 @@ the only check that covers the whole chain — validation, throttle, IP hash, in
 
 | Symptom | Cause |
 | --- | --- |
+| Every deployment is a **Preview**, the domain serves nothing, and the builds are green | The Production Branch is still `main` while merges land on `release/**`. Nothing is failing; §5, "The production branch". |
+| The production branch was changed but the domain still serves the old build | The switch is not retroactive — redeploy once (Deployments → ⋯ → Redeploy), §5. |
 | `sitemap.xml` names `http://localhost:3000` | `NEXT_PUBLIC_SITE_URL` missing in Vercel, or set *after* the build. It is inlined — redeploy. |
 | Forms answer 503 with an email address to use instead | `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing. This is the designed response to an unconfigured deploy, not a crash. |
 | Forms answer 500, log says `relation "public.contact_messages" does not exist` | Step 2 never ran: `supabase db push`. |
