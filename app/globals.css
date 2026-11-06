@@ -9,10 +9,28 @@
   --color-navy-950: #0a1220;
   --color-navy-900: #0f1b2e;
   --color-navy-700: #1d2e4a;
-  --color-brand-600: #1f6feb;
+
+  /*
+   * The brand scale is sampled from the supplied artwork, whose arrow gradient runs
+   * #1859BF -> #2F9BE0 -> #4FD1E8 with #3FA9E0 / #7FE3F5 / #BFF2FA on its light side.
+   * `brand-500` and `brand-300` are the artwork's mid and cyan stops rather than
+   * invented neighbours, and `accent-500` is that same cyan — it used to be a teal
+   * (#14B8A6) that appears nowhere in the logo, which is what made the accent look
+   * borrowed next to the mark.
+   *
+   * These are the browser's copy. `components/site/brand-mark-og.tsx` and the email
+   * templates carry the same values as literals because Satori and mail clients do
+   * not resolve `var()`; `lib/site/brand.ts` is the copy they both import.
+   */
   --color-brand-700: #1859bf;
+  --color-brand-600: #1f6feb;
+  --color-brand-500: #2f9be0;
+  --color-brand-400: #3fa9e0;
+  --color-brand-300: #4fd1e8;
+  --color-brand-200: #7fe3f5;
+  --color-brand-100: #bff2fa;
   --color-brand-50: #eef4ff;
-  --color-accent-500: #14b8a6;
+  --color-accent-500: #4fd1e8;
   --color-gray-900: #111827;
   --color-gray-600: #4b5563;
   --color-gray-200: #e5e9f0;

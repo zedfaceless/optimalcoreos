@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { vercelAnalyticsEnabled } from "@/lib/site/analytics";
+import { BRAND_COLOURS } from "@/lib/site/brand";
 import { siteUrl } from "@/lib/site/config";
 import "./globals.css";
 
@@ -51,7 +52,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0F1B2E",
+  themeColor: BRAND_COLOURS.navy900,
   colorScheme: "light",
 };
 
