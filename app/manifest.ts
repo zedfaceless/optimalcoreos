@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { BRAND_COLOURS } from "@/lib/site/brand";
 import { siteUrl } from "@/lib/site/config";
 
 /**
@@ -21,8 +22,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "Custom systems for resorts and hotels, offline and desktop software, websites and mobile-ready apps.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#0f1b2e",
+    background_color: BRAND_COLOURS.white,
+    theme_color: BRAND_COLOURS.navy900,
     lang: "en",
     icons: [
       { src: "/icon.jpeg", sizes: "1024x1024", type: "image/jpeg" },

@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { BrandMarkOg } from "@/components/site/brand-mark-og";
 import { BRAND, DELIVERY } from "@/content/site";
+import { BRAND_COLOURS } from "@/lib/site/brand";
 
 /**
  * The social card (PRD §16): the wordmark and mark in white on deep navy, a thin blue
@@ -17,41 +18,68 @@ export const contentType = "image/png";
 
 export default function OpengraphImage() {
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: 80,
-          background: "#0f1b2e",
-          backgroundImage:
-            "linear-gradient(to right, rgba(31,111,235,0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(31,111,235,0.22) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <BrandMarkOg size={96} tone="light" />
-          <div style={{ display: "flex", fontSize: 44, fontWeight: 700, color: "#ffffff", letterSpacing: -1 }}>
-            {BRAND.name}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: 68, fontWeight: 700, color: "#ffffff", letterSpacing: -2, lineHeight: 1.1 }}>
-            Resort systems and
-          </div>
-          <div style={{ display: "flex", fontSize: 68, fontWeight: 700, color: "#ffffff", letterSpacing: -2, lineHeight: 1.1 }}>
-            offline software
-          </div>
-          <div style={{ display: "flex", marginTop: 28, fontSize: 30, color: "rgba(255,255,255,0.72)" }}>
-            {`Bookings, front desk, POS, dashboards. ${DELIVERY.smallFull}.`}
-          </div>
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: 80,
+        background: BRAND_COLOURS.navy900,
+        /* brand-600 at 22%: the grid is a texture over the navy, not a third colour. */
+        backgroundImage:
+          "linear-gradient(to right, rgba(31,111,235,0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(31,111,235,0.22) 1px, transparent 1px)",
+        backgroundSize: "60px 60px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+        <BrandMarkOg size={96} tone="light" />
+        <div
+          style={{
+            display: "flex",
+            fontSize: 44,
+            fontWeight: 700,
+            color: "#ffffff",
+            letterSpacing: -1,
+          }}
+        >
+          {BRAND.name}
         </div>
       </div>
-    ),
+
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 68,
+            fontWeight: 700,
+            color: "#ffffff",
+            letterSpacing: -2,
+            lineHeight: 1.1,
+          }}
+        >
+          Resort systems and
+        </div>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 68,
+            fontWeight: 700,
+            color: "#ffffff",
+            letterSpacing: -2,
+            lineHeight: 1.1,
+          }}
+        >
+          offline software
+        </div>
+        <div
+          style={{ display: "flex", marginTop: 28, fontSize: 30, color: "rgba(255,255,255,0.72)" }}
+        >
+          {`Bookings, front desk, POS, dashboards. ${DELIVERY.smallFull}.`}
+        </div>
+      </div>
+    </div>,
     { ...size },
   );
 }

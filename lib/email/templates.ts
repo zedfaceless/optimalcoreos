@@ -1,5 +1,6 @@
 import type { ContactInput, QuoteInput } from "@/lib/validation/forms";
 import { BRAND } from "@/content/site";
+import { BRAND_COLOURS } from "@/lib/site/brand";
 import { meetingPlatformLabel } from "@/lib/site/meetings";
 import { getSiteSettings } from "@/lib/site/settings";
 
@@ -24,9 +25,9 @@ function layout(heading: string, rows: [string, string][], paragraphs: string[] 
     .filter(([, value]) => value.trim().length > 0)
     .map(
       ([label, value]) =>
-        `<tr><th align="left" style="padding:6px 16px 6px 0;font:600 13px/1.4 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#4b5563;vertical-align:top;white-space:nowrap">${escapeHtml(
+        `<tr><th align="left" style="padding:6px 16px 6px 0;font:600 13px/1.4 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:${BRAND_COLOURS.gray600};vertical-align:top;white-space:nowrap">${escapeHtml(
           label,
-        )}</th><td style="padding:6px 0;font:400 14px/1.55 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#111827;white-space:pre-wrap">${escapeHtml(
+        )}</th><td style="padding:6px 0;font:400 14px/1.55 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:${BRAND_COLOURS.gray900};white-space:pre-wrap">${escapeHtml(
           value,
         )}</td></tr>`,
     )
@@ -35,18 +36,18 @@ function layout(heading: string, rows: [string, string][], paragraphs: string[] 
   const body = paragraphs
     .map(
       (paragraph) =>
-        `<p style="margin:0 0 14px;font:400 14px/1.65 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#111827">${escapeHtml(
+        `<p style="margin:0 0 14px;font:400 14px/1.65 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:${BRAND_COLOURS.gray900}">${escapeHtml(
           paragraph,
         )}</p>`,
     )
     .join("");
 
-  return `<!doctype html><html><body style="margin:0;background:#f7f9fc;padding:24px">
-  <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e5e9f0;border-radius:16px;padding:28px">
-    <p style="margin:0 0 4px;font:700 11px/1.4 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#1f6feb">${escapeHtml(
+  return `<!doctype html><html><body style="margin:0;background:${BRAND_COLOURS.gray50};padding:24px">
+  <div style="max-width:640px;margin:0 auto;background:${BRAND_COLOURS.white};border:1px solid ${BRAND_COLOURS.gray200};border-radius:16px;padding:28px">
+    <p style="margin:0 0 4px;font:700 11px/1.4 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:${BRAND_COLOURS.brand600}">${escapeHtml(
       BRAND.name,
     )}</p>
-    <h1 style="margin:0 0 18px;font:700 21px/1.25 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#0a1220">${escapeHtml(
+    <h1 style="margin:0 0 18px;font:700 21px/1.25 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:${BRAND_COLOURS.navy950}">${escapeHtml(
       heading,
     )}</h1>
     ${body}

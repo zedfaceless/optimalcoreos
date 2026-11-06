@@ -12,8 +12,12 @@
  * paints. The knockout has to match whatever surface is behind the mark or the shaft
  * shows a seam where it crosses the rings: this file is only ever drawn on the OG card,
  * while `brand-mark.tsx` is also drawn in the footer, which is navy-950 (#0a1220) — the
- * two files therefore knock out different values on purpose.
+ * two files therefore knock out different values on purpose. Both take their values from
+ * `lib/site/brand.ts`, which the card's own background does too, so the seam cannot
+ * reappear through a retyped hex.
  */
+import { BRAND_COLOURS } from "@/lib/site/brand";
+
 const BOX = 40;
 
 const CENTRE_X = 19;
@@ -73,12 +77,19 @@ function HexRing({
   );
 }
 
-export function BrandMarkOg({ size = 96, tone = "light" }: { size?: number; tone?: "dark" | "light" }) {
+export function BrandMarkOg({
+  size = 96,
+  tone = "light",
+}: {
+  size?: number;
+  tone?: "dark" | "light";
+}) {
   const scale = size / BOX;
   const light = tone === "light";
-  const knockout = light ? "#0F1B2E" : "#FFFFFF";
-  const accent = light ? "#4FD1E8" : "#1F6FEB";
-  const ringColour = light ? "#4FD1E8" : "#1F6FEB";
+  const knockout = light ? BRAND_COLOURS.navy900 : BRAND_COLOURS.white;
+  const accent = light ? BRAND_COLOURS.brand300 : BRAND_COLOURS.brand600;
+  /* One source for both: the rings and the arrow are the same ink at these sizes. */
+  const ringColour = accent;
 
   /* The shaft runs (6,34) to (27.9,12.1) — 45 degrees, midpoint (16.95,23.05). */
   const shaft = (thickness: number, colour: string) => {

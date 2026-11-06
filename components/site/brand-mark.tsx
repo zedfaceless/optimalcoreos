@@ -9,8 +9,11 @@ import { cn } from "@/lib/utils";
  *
  * `tone` follows the surface: `dark` is the header (blue on white), `light` is the
  * footer (cyan on navy-950). The arrow is drawn twice — a wide knockout stroke in the
- * surface colour, then the gradient — so it reads where it crosses the rings. If a
- * surface ever changes navy, that knockout has to change with it.
+ * surface colour, then the gradient — so it reads where it crosses the rings. The
+ * knockout is `--color-navy-950` rather than a hex, and the gradients are
+ * `--color-brand-*`, so repainting a token repaints the mark with it.
+ * `brand-mark-og.tsx` cannot do that — satori has no custom properties — and carries
+ * the literals from `lib/site/brand.ts` instead.
  */
 const CENTRE_X = 19;
 const CENTRE_Y = 20;
@@ -42,7 +45,12 @@ export function BrandMark({
   const light = tone === "light";
   const ringsId = `oc-rings-${tone}`;
   const arrowId = `oc-arrow-${tone}`;
-  const knockout = light ? "#0A1220" : "#FFFFFF";
+  const knockout = light ? "var(--color-navy-950)" : "#FFFFFF";
+  const ringFrom = light ? "var(--color-brand-600)" : "var(--color-brand-700)";
+  const ringTo = light ? "var(--color-brand-300)" : "var(--color-brand-600)";
+  const arrowFrom = light ? "var(--color-brand-400)" : "var(--color-brand-700)";
+  const arrowMid = light ? "var(--color-brand-200)" : "var(--color-brand-500)";
+  const arrowTo = light ? "var(--color-brand-100)" : "var(--color-brand-300)";
 
   return (
     <svg
@@ -53,13 +61,13 @@ export function BrandMark({
     >
       <defs>
         <linearGradient id={ringsId} x1="6" y1="30" x2="32" y2="8" gradientUnits="userSpaceOnUse">
-          <stop stopColor={light ? "#1F6FEB" : "#1859BF"} />
-          <stop offset="1" stopColor={light ? "#4FD1E8" : "#1F6FEB"} />
+          <stop stopColor={ringFrom} />
+          <stop offset="1" stopColor={ringTo} />
         </linearGradient>
         <linearGradient id={arrowId} x1="6" y1="34" x2="35" y2="5" gradientUnits="userSpaceOnUse">
-          <stop stopColor={light ? "#3FA9E0" : "#1859BF"} />
-          <stop offset="0.55" stopColor={light ? "#7FE3F5" : "#2F9BE0"} />
-          <stop offset="1" stopColor={light ? "#BFF2FA" : "#4FD1E8"} />
+          <stop stopColor={arrowFrom} />
+          <stop offset="0.55" stopColor={arrowMid} />
+          <stop offset="1" stopColor={arrowTo} />
         </linearGradient>
       </defs>
 
@@ -94,4 +102,3 @@ export function BrandMark({
     </svg>
   );
 }
-
