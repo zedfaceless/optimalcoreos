@@ -179,18 +179,27 @@ satisfy `output: 'export'`, which previews a different site, not this one. The t
 temporary in the way the file itself says: random URL, public to anyone holding it, gone when
 the run ends or is cancelled. When a real host exists, delete the file; nothing else reads it.
 
-**Production goes to Vercel through its Git integration, and the second path gets deleted.**
+**Production goes to Vercel through its Git integration, and the second path is deleted.**
 The repository carried two ways to reach production — `.github/workflows/deploy.yml`, which
 builds with the Vercel CLI and ships the artefact CI tested, and importing the project into
-Vercel and letting it build every push. Both work; keeping both means two things can create a
-production deployment from the same commit, which is how a site ends up serving a build
-nobody can identify. The Git integration wins because it is the path that needs no secret in
-this repository and no runner minutes to maintain, and the workflow is inert (a notice, not a
-red cross) only for as long as `VERCEL_TOKEN` does not exist — one secret away from being
-live by accident. So `docs/deploy.md` says `git rm .github/workflows/deploy.yml` as a deploy
-step. What that gives up is the property the workflow existed for: that what goes live is
-byte-for-byte what `pnpm check` and `pnpm build` just passed. `ci.yml` still gates the merge,
-so the gap is a rebuild on a different machine, not an untested commit.
+Vercel and letting it build every push. Both worked; keeping both meant two things could
+create a production deployment from the same commit, which is how a site ends up serving a
+build nobody can identify. The Git integration won because it is the path that needs no secret
+in this repository and no runner minutes to maintain. The workflow was deleted on 6 November
+2026, once the integration had shipped `main` a few times and `verify-production.yml` had
+taken over its checks.
+
+What that gave up was the property the workflow existed for: that what goes live is byte-for-byte
+what `pnpm check` and `pnpm build` just passed. `ci.yml` still gates the merge, so the gap is a
+rebuild on a different machine, not an untested commit — and the checks the workflow ran *after*
+the deploy (`/devside` noindex by header, a sitemap naming the real origin) were the part worth
+keeping, so they moved rather than vanished: `scripts/verify-production.mjs`, run by
+`.github/workflows/verify-production.yml` on every push to `main`. It needs no secret because it
+only reads the public site, and its first act is to poll `GET /api/version` — a route that exists
+for no other reason — until the deployment under test names the commit that triggered it. That
+solves the problem that made the old verification possible at all: Vercel's integration posts no
+completion event back to this repository, so a workflow cannot be told when the deploy landed and
+has to ask.
 
 **Two hosted settings are not in the repository, and one of them silently breaks the console.**
 `supabase/config.toml` closes signup and sets a twelve-character password floor, but those are

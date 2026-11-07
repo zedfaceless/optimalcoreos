@@ -187,9 +187,10 @@ environment a domain belongs to, and no preview URL will ever answer on the real
 healthy its build. And **the switch is not retroactive** — deployments already made keep their
 label, so after changing it press *Redeploy* on one (Deployments → ⋯ → Redeploy) or push a
 commit before concluding anything. From the CLI the same rule has another face: `vercel deploy`
-is a Preview, and only `--prod` — as in `vercel build --prod` then `deploy --prebuilt --prod`,
-which is what `.github/workflows/deploy.yml` runs — creates a Production deployment. `vercel ls`
-prints the environment of each row.
+is a Preview, and only `--prod` — as in `vercel build --prod` then `deploy --prebuilt --prod` —
+creates a Production deployment. `vercel ls` prints the environment of each row. The CLI is
+for a hand-run deploy in an emergency; the routine path is the Git integration above, and
+`verify-production.yml` checks whatever it shipped.
 
 There is no `vercel.json` and there should not be: the framework preset already knows how
 to build this, a hand-written config is one more thing that can disagree with it, and none of
@@ -222,22 +223,31 @@ the DNS instruction. Then set `NEXT_PUBLIC_SITE_URL` to that exact origin and re
 until you do, `sitemap.xml`, `robots.txt` and every canonical link keep naming the old
 origin, because the value was baked in at build time.
 
-**Delete the other deploy path.** Since Vercel builds from Git, `.github/workflows/deploy.yml`
-is a second way to reach the same production deployment:
+**The second deploy path is gone.** The repository used to carry two ways to reach the same
+production deployment — importing the project into Vercel and letting it build every push, or
+`.github/workflows/deploy.yml` building with the Vercel CLI and shipping the artefact. Both
+worked; keeping both meant two things could create a Production deployment from one commit,
+which is how a site ends up serving a build nobody can identify. The Git integration won, for
+the reason `docs/decisions.md` records (no secret in the repository, no runner minutes to
+maintain), and the workflow was deleted on 6 November 2026. Do not recreate it: adding the
+three `VERCEL_*` secrets it guards for is the *other* decision, and it is only coherent with
+switching this section's Git integration off.
+
+**What replaced its checks.** `deploy.yml` also verified its own work, and that part was worth
+keeping, so it moved to `.github/workflows/verify-production.yml`: on every push to `main` it
+polls `GET /api/version` until the running deployment names that commit — Vercel reports no
+completion back to GitHub, so the wait has to be a poll — and then runs
+`scripts/verify-production.mjs` (`pnpm verify:prod`) against the live origin. Run that script
+by hand after any manual deploy; it needs nothing but node:
 
 ```bash
-git rm .github/workflows/deploy.yml
+node scripts/verify-production.mjs                     # checks the project's vercel.app host
+node scripts/verify-production.mjs https://optimalcoreos.com
 ```
 
-Until it is deleted it stays harmless — it notices "Deploy skipped" rather than failing,
-for as long as the three `VERCEL_*` secrets do not exist. Adding those secrets is the
-opposite decision: it makes Actions ship the artefact CI built and tested, and then this
-section's Git integration should be switched off instead.
-
-It also triggers on `main` alone, which is the other reason the two decisions cannot be mixed:
-with the production branch set to `release/**` above, adding those three secrets would build
-`main` and push it with `--prod`, publishing code that is not the release to the domain that
-serves the release. Delete-or-commit, never both.
+It is §7 below as a program, and it fails on exactly what §7 asks a person to look at: an
+`X-Robots-Tag` missing `noindex`, a sitemap naming localhost, a missing security header, an
+`unsafe-eval` that shipped, a tab icon over 200 KB, or a bad path that is not a 404.
 
 `.github/workflows/preview.yml` has the same ending, one step later and for a different
 reason: it exists because there was no host. Once Vercel serves production, the preview run
@@ -280,6 +290,13 @@ Supabase's invitation email and writes the row itself.
 
 Side-effect-free, and each line corresponds to a failure this project has actually had.
 Needs only `curl`, so it can be run from anywhere.
+
+`pnpm verify:prod` — equivalently `node scripts/verify-production.mjs [url]` — is this section
+as a program, and is what `.github/workflows/verify-production.yml` runs against production after
+every push to `main`. It checks what the block below checks, refuses an `/api/contact` answer that
+is not 422, and adds three things a person has no reason to curl by hand: the tab icon's weight
+(a file-convention route ships the raster as-is), a 404 that is one, and a `/robots.txt` that does
+not name `/devside`. Run the block when you want to watch each line answer.
 
 ```bash
 BASE=https://<domain>

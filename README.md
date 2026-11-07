@@ -121,14 +121,14 @@ site survives; that fallback is exactly what prints `http://localhost:3000` into
 metadata. Set the repository variable `NEXT_PUBLIC_SITE_URL` so a build in CI publishes the
 real canonical origin instead.
 
-`.github/workflows/deploy.yml` is the optional second path to production: it pulls the
-Vercel project's settings, builds with `vercel build`, ships with `vercel deploy --prebuilt`,
-then checks its own work — `/devside` must answer an `X-Robots-Tag` naming `noindex`, and
-`sitemap.xml` must not name localhost. It stays inert, a notice rather than a red cross,
-until `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` exist as repository secrets.
-If the project is imported into Vercel and deploys from its Git integration instead — step
-4 below, the path this README recommends — delete that file rather than let the two race for
-the same production deployment.
+`.github/workflows/verify-production.yml` is the check that used to live inside the deploy
+workflow: on every push to `main` it waits for `GET /api/version` to name the commit it is
+running for — Vercel's Git integration reports nothing back here, so the wait is a poll —
+then runs `scripts/verify-production.mjs` (`pnpm verify:prod`) against the live origin. That
+script is `docs/deploy.md` §7 as a program: `/devside` must answer an `X-Robots-Tag` naming
+`noindex`, `sitemap.xml` must not name localhost, the security headers must be present, the
+tab icon must be under 200 KB, and an unknown path must be a 404. It reads and writes
+nothing and holds no secret, so it runs on the default token.
 
 `.github/workflows/preview.yml` is the path while there is no host at all. A GitHub-hosted
 runner cannot serve a site — it is ephemeral, and nothing connects to it — so this does the
@@ -162,10 +162,11 @@ easiest to skip and cost the most when you do:
    are in the runbook.
 4. Import the repository into Vercel, set **Settings → Git → Production Branch** to the branch
    you merge into (`release/**`; left at the `main` default every deployment is a Preview and
-   the domain never serves this code — `docs/deploy.md` §5), set the environment variables for
-   Production and Preview (`docs/deploy.md` §5 has the table, and which four a deploy cannot
-   run without), then delete the other path: `git rm .github/workflows/deploy.yml`. One way to
-   production, not two racing for it.
+   the domain never serves this code — `docs/deploy.md` §5), and set the environment variables
+   for Production and Preview (`docs/deploy.md` §5 has the table, and which four a deploy
+   cannot run without). There is one path to production and it is this one: the Vercel CLI
+   workflow that used to sit beside it was deleted rather than left to race it, and
+   `verify-production.yml` now checks what the integration ships.
 5. Insert the first `public.admin_users` row in the hosted database, then sign in at
    `/devside`.
 6. Verify: the block in `docs/deploy.md` §7. `/devside` must answer an `X-Robots-Tag` naming
@@ -194,5 +195,5 @@ easiest to skip and cost the most when you do:
 | `components/**` | `site/` (header, footer, sections, mockups), `forms/` (quote wizard, contact form), `devside/`, `ui/` |
 | `supabase/migrations/**` | The schema, in timestamped SQL |
 | `docs/` | `deploy.md` (the Supabase + Vercel procedure, and the failure modes it is written against), `PLACEHOLDERS.md` (what only the owner can supply, and what is deliberately unfinished), `decisions.md` (the calls made while building, and why) |
-| `.github/workflows/**` | `ci.yml` — typecheck, lint, tests and a production build on every pull request into `main`. `deploy.yml` — the optional Vercel CLI deploy, inert until its three secrets exist |
+| `.github/workflows/**` | `ci.yml` — typecheck, lint, tests and a production build on every pull request into `main`. `verify-production.yml` — the live-origin checks (noindex on `/devside`, a sitemap off localhost, the security headers) after every push to `main`, driven by `scripts/verify-production.mjs` |
 
