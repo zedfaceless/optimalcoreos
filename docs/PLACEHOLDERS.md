@@ -20,11 +20,11 @@ Two rules this file exists to keep:
 
 | Variable | Ships as | Empty means |
 | --- | --- | --- |
-| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | `sitemap.xml`, `robots.txt`, canonical links and email links all name localhost. The production build must set it. |
+| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | `sitemap.xml`, `robots.txt`, canonical links and email links all name localhost. The production build must set it; `ci.yml` fails a build that still names localhost once the repository variable is set, and `scripts/verify-production.mjs` fails the live check if it shipped. |
 | `NEXT_PUBLIC_SUPABASE_URL` | unset | The forms answer 503 with an address to email instead; `/devside` shows "not configured". |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | unset | The console cannot sign in. |
 | `SUPABASE_SERVICE_ROLE_KEY` | unset | Nothing can be written to the three tables. Server only — never `NEXT_PUBLIC_`. |
-| `RESEND_API_KEY` | unset | Rows are still saved; nobody is emailed. The log says `[email] skipped`. |
+| `RESEND_API_KEY` | **set** in Vercel (Production and Preview); unset locally | With no key the rows are still saved and nobody is emailed — the log says `[email] skipped`. With one, the owner's notifications arrive and a visitor's confirmation is refused by Resend until a sending domain is verified: `[email] Resend refused the message`. Both states were exercised on 7 November 2026 against the live deployment. |
 | `EMAIL_FROM` | `Optimal Core OS <onboarding@resend.dev>` | The Resend test sender, which delivers only to the Resend account owner. Needs a verified domain before a real lead is answered. |
 | `OWNER_NOTIFY_EMAIL` | unset | No new-lead notification. Comma-separated for more than one inbox. |
 | `CONTACT_PUBLIC_EMAIL` | `hello@optimalcoreos.com` | — (a public address has to exist on the page; this is the one the site ships with and the owner should confirm it). |
