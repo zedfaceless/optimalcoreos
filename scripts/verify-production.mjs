@@ -199,7 +199,8 @@ async function checkSitemapAndRobots() {
       ? "http://localhost:3000 — NEXT_PUBLIC_SITE_URL was unset at build"
       : "",
   );
-  record("sitemap names this host", sitemapBody.includes(host), `no ${host} in the sitemap`);
+  const namesHost = sitemapBody.includes(host);
+  record("sitemap names this host", namesHost, namesHost ? "" : `no ${host} in the sitemap`);
 
   const robots = await get("/robots.txt");
   const robotsBody = await robots.text();
