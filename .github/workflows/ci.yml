@@ -72,3 +72,22 @@ jobs:
           # laptop and the wrong thing to publish, so set the repository variable
           # once the domain exists. Nothing else in this workflow reads one.
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+
+      # The build above used the repository variable when it exists, and a build
+      # without it prints `http://localhost:3000` into the sitemap and every canonical
+      # link while passing every other check — the failure `docs/deploy.md` §7 asks a
+      # person to grep for by hand, and the one `deploy.yml` used to catch after the
+      # fact. Skip quietly when the variable is unset (a fork has no variables and its
+      # build is honestly a localhost build); fail when it is set and the output
+      # disagrees with it.
+      - name: Canonical origin
+        if: vars.NEXT_PUBLIC_SITE_URL != ''
+        run: |
+          set -euo pipefail
+          hits="$(grep -rl 'http://localhost:3000' .next/server/app 2>/dev/null | head -n 5 || true)"
+          if [ -n "$hits" ]; then
+            echo "::error title=Canonical origin::NEXT_PUBLIC_SITE_URL is set, but the build still names localhost in:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "canonical origin: no localhost in the prerendered routes"

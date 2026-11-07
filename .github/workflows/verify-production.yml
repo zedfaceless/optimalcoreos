@@ -1,0 +1,60 @@
+name: Verify production
+
+# What is live, checked by a machine after every push to `main`.
+#
+# Vercel builds `main` through its Git integration and posts nothing back to this
+# repository when that finishes — no `deployment_status` event, no deployment object —
+# so this workflow cannot hear the deploy land. It polls instead: `GET /api/version`
+# names the commit the running deployment was built from, and this run waits until
+# that answer is the commit it is running for, then checks what is being served.
+#
+# The checks themselves are `scripts/verify-production.mjs`, which is §7 of
+# `docs/deploy.md` as a program: `/devside` noindex by header, a sitemap naming the
+# real origin, the security headers, the icon weight, and a 404 that is one. It reads
+# and writes nothing, holds no secret, and needs no install, so this job runs on the
+# default read-only token in under a minute once the deployment is live.
+#
+# It replaces the verification half of the retired `.github/workflows/deploy.yml`: the
+# deploy half was the second path to production that `docs/decisions.md` deleted, and
+# the checks were the part worth keeping.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Origin to check (defaults to the repository variable PRODUCTION_URL)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+# One verification at a time, and the newest commit is the one worth checking.
+concurrency:
+  group: verify-production
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Check what production serves
+    runs-on: ubuntu-latest
+    # A cold Vercel build for this site is minutes, not tens of minutes; the poll gives
+    # up at ten and the job ceiling leaves room for the checks after it.
+    timeout-minutes: 25
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Verify
+        env:
+          PRODUCTION_URL: ${{ github.event.inputs.url || vars.PRODUCTION_URL }}
+          # On a push, the commit this run belongs to. On a manual run there is no
+          # commit to wait for, so it verifies whatever is live right now.
+          EXPECT_COMMIT: ${{ github.event_name == 'push' && github.sha || '' }}
+        run: node scripts/verify-production.mjs --wait-for-commit "$EXPECT_COMMIT"

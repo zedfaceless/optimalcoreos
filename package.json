@@ -11,6 +11,7 @@
     "test": "vitest run",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:config",
     "check:config": "node scripts/check-auth-config.mjs",
+    "verify:prod": "node scripts/verify-production.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {

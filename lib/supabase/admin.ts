@@ -12,7 +12,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * this key. Nothing in a client component may import this module — `server-only`
  * above turns that mistake into a build error rather than a leaked key.
  *
- * When the two variables are absent — a fresh clone before `pnpm db:start` — the
+ * When the two variables are absent — a fresh clone before `supabase start` — the
  * factory returns null rather than throwing at import time, so the site still
  * builds and renders; the form then tells the visitor to email us instead of
  * pretending the request was saved, and the console says it is not configured.
